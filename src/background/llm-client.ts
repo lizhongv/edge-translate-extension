@@ -53,3 +53,44 @@ export function normalizeError(
     }
     return { code: "unknown", message: "未知错误", retryable: false };
 }
+
+export function* parseSSEChunks(buffer: string): Generator<string> {
+    const events = buffer.split(/\n\n/);
+    for (const ev of events) {
+        if (!ev.trim()) continue;
+        for (const line of ev.split("\n")) {
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") continue;
+            const parsed = JSON.parse(payload);
+            const content = parsed?.choices?.[0]?.delta?.content;
+            if (typeof content === "string" && content.length > 0) {
+                yield content;
+            }
+        }
+    }
+}
+
+export async function* streamFromResponse(response: Response): AsyncGenerator<string> {
+    if (!response.body) throw new Error("response has no body");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lastBoundary = buffer.lastIndexOf("\n\n");
+            if (lastBoundary === -1) continue;
+            const ready = buffer.slice(0, lastBoundary + 2);
+            buffer = buffer.slice(lastBoundary + 2);
+            for (const t of parseSSEChunks(ready)) yield t;
+        }
+        if (buffer.trim()) {
+            for (const t of parseSSEChunks(buffer)) yield t;
+        }
+    } finally {
+        reader.releaseLock();
+    }
+}
