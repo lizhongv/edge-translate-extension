@@ -1,0 +1,39 @@
+:host {
+    all: initial;
+    color-scheme: light dark;
+}
+.btn {
+    position: fixed;
+    z-index: 2147483647;
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid #b8bdc4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+.btn:active {
+    transform: scale(0.96);
+}
+.btn img {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+    .btn {
+        background: #2a2f36;
+        border-color: #4a5160;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+}
