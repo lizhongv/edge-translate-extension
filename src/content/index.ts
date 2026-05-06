@@ -1,4 +1,5 @@
 import { FloatingCard } from "./floating-card";
+import { HoverButton, isInEditable } from "./hover-button";
 import { getSelectionRect, getSelectionText } from "./selection";
 import { getPublicSettings } from "../shared/storage";
 import { msgTranslate, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
@@ -7,6 +8,7 @@ import type { LLMError, RuntimeMessage } from "../shared/types";
 console.log("[翻译插件] content script 已加载:", location.href);
 
 const card = new FloatingCard();
+const hoverButton = new HoverButton();
 let currentPort: chrome.runtime.Port | null = null;
 let lastText = "";
 let partial = "";
@@ -47,14 +49,13 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
         console.warn("[翻译插件] 没有可翻译的文本（选区已丢失且菜单未带文本）");
         return;
     }
+    hoverButton.hide();
     const rect = getSelectionRect();
     lastText = text;
     const settings = await getPublicSettings();
 
     card.mount(rect, {
-        onClose: () => {
-            disconnect();
-        },
+        onClose: () => { disconnect(); },
         onRetry: () => {
             card.setLoading();
             startTranslation(lastText);
@@ -66,9 +67,7 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
             card.setLoading();
             startTranslation(lastText);
         },
-        onCancelLong: () => {
-            disconnect();
-        },
+        onCancelLong: () => { disconnect(); },
     });
 
     if (text.length > settings.longTextThreshold) {
@@ -77,6 +76,61 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
         startTranslation(text);
     }
 }
+
+// ===== 划词浮标编排 =====
+
+async function maybeShowHoverButton(): Promise<void> {
+    const text = getSelectionText();
+    if (!text || text.length < 2) {
+        hoverButton.hide();
+        return;
+    }
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+        hoverButton.hide();
+        return;
+    }
+    if (isInEditable(sel.anchorNode)) {
+        hoverButton.hide();
+        return;
+    }
+    const settings = await getPublicSettings();
+    if (settings.enableHoverButton === false) {
+        hoverButton.hide();
+        return;
+    }
+    const rect = getSelectionRect();
+    if (!rect) {
+        hoverButton.hide();
+        return;
+    }
+    hoverButton.show(rect, () => {
+        void handleTrigger(text);
+    });
+}
+
+document.addEventListener("mouseup", () => {
+    setTimeout(() => { void maybeShowHoverButton(); }, 0);
+});
+
+document.addEventListener("selectionchange", () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.toString().trim().length === 0) {
+        hoverButton.hide();
+    }
+});
+
+document.addEventListener("mousedown", (e) => {
+    if (!hoverButton.isShown()) return;
+    if (hoverButton.contains(e.target)) return;
+    hoverButton.hide();
+}, true);
+
+window.addEventListener("scroll", () => {
+    hoverButton.hide();
+}, true);
+
+// ===== 现有 chrome.runtime 消息入口 =====
 
 chrome.runtime.onMessage.addListener((msg: RuntimeMessage | { type: string }) => {
     if ((msg as { type: string }).type === "__ping__") return;
