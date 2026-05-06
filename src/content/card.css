@@ -1,0 +1,68 @@
+:host {
+    all: initial;
+    color-scheme: light dark;
+}
+.card {
+    position: fixed;
+    z-index: 2147483647;
+    max-width: 420px;
+    min-width: 240px;
+    background: #fff;
+    color: #1a1a1a;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 12px 14px;
+    overflow-wrap: break-word;
+}
+@media (prefers-color-scheme: dark) {
+    .card {
+        background: #1f1f1f;
+        color: #e6e6e6;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    opacity: 0.75;
+}
+.body {
+    white-space: pre-wrap;
+}
+.footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
+button {
+    font: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: inherit;
+    opacity: 0.85;
+}
+button:hover {
+    opacity: 1;
+}
+.error { color: #c0392b; }
+.spinner {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
