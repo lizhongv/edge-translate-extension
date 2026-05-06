@@ -38,15 +38,41 @@ chrome.runtime.onInstalled.addListener(registerContextMenu);
 chrome.runtime.onStartup.addListener(registerContextMenu);
 registerContextMenu();
 
+function getContentScriptFiles(): string[] {
+    const m = chrome.runtime.getManifest();
+    const cs = m.content_scripts?.[0];
+    return cs?.js ?? [];
+}
+
+async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
+    try {
+        await chrome.tabs.sendMessage(tabId, message);
+    } catch (err) {
+        console.warn("[翻译插件] sendMessage 失败，尝试注入 content script:", err);
+        const files = getContentScriptFiles();
+        if (files.length === 0) {
+            notifyRestricted();
+            return;
+        }
+        try {
+            await chrome.scripting.executeScript({ target: { tabId }, files });
+            await new Promise((r) => setTimeout(r, 80));
+            await chrome.tabs.sendMessage(tabId, message);
+        } catch (e) {
+            console.error("[翻译插件] 注入并重发失败:", e);
+            notifyRestricted();
+        }
+    }
+}
+
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId !== MENU_ID) return;
+    console.log("[翻译插件] 右键点击，selectionText=", info.selectionText?.slice(0, 50));
     if (!tab?.id || isRestrictedUrl(tab.url)) {
         notifyRestricted();
         return;
     }
-    chrome.tabs.sendMessage(tab.id, rtShowCard()).catch(() => {
-        notifyRestricted();
-    });
+    void dispatchToTab(tab.id, rtShowCard(info.selectionText));
 });
 
 chrome.commands.onCommand.addListener((command) => {
@@ -57,9 +83,7 @@ chrome.commands.onCommand.addListener((command) => {
             notifyRestricted();
             return;
         }
-        chrome.tabs.sendMessage(tab.id, rtRequestTranslate()).catch(() => {
-            notifyRestricted();
-        });
+        void dispatchToTab(tab.id, rtRequestTranslate());
     });
 });
 

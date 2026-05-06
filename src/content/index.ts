@@ -4,6 +4,8 @@ import { getPublicSettings } from "../shared/storage";
 import { msgTranslate, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
 import type { LLMError, RuntimeMessage } from "../shared/types";
 
+console.log("[翻译插件] content script 已加载:", location.href);
+
 const card = new FloatingCard();
 let currentPort: chrome.runtime.Port | null = null;
 let lastText = "";
@@ -37,9 +39,14 @@ function startTranslation(text: string): void {
     port.postMessage(msgTranslate(text));
 }
 
-async function handleTrigger(): Promise<void> {
-    const text = getSelectionText();
-    if (!text) return;
+async function handleTrigger(fallbackText?: string): Promise<void> {
+    const live = getSelectionText();
+    const text = live || fallbackText || "";
+    console.log("[翻译插件] 触发翻译, DOM 选区:", live.slice(0, 30), "回退:", fallbackText?.slice(0, 30));
+    if (!text) {
+        console.warn("[翻译插件] 没有可翻译的文本（选区已丢失且菜单未带文本）");
+        return;
+    }
     const rect = getSelectionRect();
     lastText = text;
     const settings = await getPublicSettings();
@@ -71,8 +78,12 @@ async function handleTrigger(): Promise<void> {
     }
 }
 
-chrome.runtime.onMessage.addListener((msg: RuntimeMessage) => {
-    if (msg.type === "showCard" || msg.type === "requestTranslate") {
+chrome.runtime.onMessage.addListener((msg: RuntimeMessage | { type: string }) => {
+    if ((msg as { type: string }).type === "__ping__") return;
+    const m = msg as RuntimeMessage;
+    if (m.type === "showCard") {
+        void handleTrigger(m.text);
+    } else if (m.type === "requestTranslate") {
         void handleTrigger();
     }
 });

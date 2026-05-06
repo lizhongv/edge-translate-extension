@@ -20,7 +20,8 @@ export const isDoneMsg = (v: unknown): v is { type: "done"; full: string } =>
 export const isErrorMsg = (v: unknown): v is { type: "error"; error: LLMError } =>
     isObj(v) && v.type === "error" && isObj(v.error);
 
-export const rtShowCard = (): RuntimeMessage => ({ type: "showCard" });
+export const rtShowCard = (text?: string): RuntimeMessage =>
+    text !== undefined ? { type: "showCard", text } : { type: "showCard" };
 export const rtRequestTranslate = (): RuntimeMessage => ({ type: "requestTranslate" });
 export const rtHistoryUpdated = (): RuntimeMessage => ({ type: "historyUpdated" });
 export const rtOpenOptions = (): RuntimeMessage => ({ type: "openOptions" });

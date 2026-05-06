@@ -45,7 +45,7 @@ export type PortMessage =
     | { type: "error"; error: LLMError };
 
 export type RuntimeMessage =
-    | { type: "showCard" }
+    | { type: "showCard"; text?: string }
     | { type: "requestTranslate" }
     | { type: "historyUpdated" }
     | { type: "openOptions" };
