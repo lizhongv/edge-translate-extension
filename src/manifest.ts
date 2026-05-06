@@ -1,0 +1,48 @@
+import { defineManifest } from "@crxjs/vite-plugin";
+import pkg from "../package.json" with { type: "json" };
+
+export default defineManifest({
+    manifest_version: 3,
+    name: "法译查鉴",
+    version: pkg.version,
+    description: "右键划词调用 OpenAI 兼容大模型流式翻译",
+    permissions: [
+        "contextMenus",
+        "storage",
+        "sidePanel",
+        "notifications",
+        "activeTab",
+        "scripting",
+    ],
+    host_permissions: ["<all_urls>"],
+    background: {
+        service_worker: "src/background/index.ts",
+        type: "module",
+    },
+    content_scripts: [
+        {
+            matches: ["<all_urls>"],
+            js: ["src/content/index.ts"],
+            run_at: "document_idle",
+        },
+    ],
+    side_panel: {
+        default_path: "src/sidepanel/index.html",
+    },
+    options_page: "src/options/index.html",
+    action: {
+        default_title: "法译查鉴 - 打开历史",
+    },
+    commands: {
+        translate: {
+            suggested_key: { default: "Alt+T" },
+            description: "翻译当前选中文本",
+        },
+    },
+    icons: {
+        16: "icons/16.png",
+        32: "icons/32.png",
+        48: "icons/48.png",
+        128: "icons/128.png",
+    },
+});
