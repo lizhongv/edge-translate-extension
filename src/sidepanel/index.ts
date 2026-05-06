@@ -30,7 +30,10 @@ function render(items: HistoryItem[]): void {
             await deleteHistoryItem(item.id);
             await refresh();
         });
-        (node.querySelector(".copy") as HTMLElement).addEventListener("click", () => {
+        (node.querySelector(".copy-src") as HTMLElement).addEventListener("click", () => {
+            navigator.clipboard.writeText(item.sourceText).catch(() => {/* ignore */});
+        });
+        (node.querySelector(".copy-dst") as HTMLElement).addEventListener("click", () => {
             navigator.clipboard.writeText(item.translatedText).catch(() => {/* ignore */});
         });
         listEl.appendChild(node);

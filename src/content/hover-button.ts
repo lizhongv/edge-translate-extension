@@ -41,10 +41,10 @@ export class HoverButton {
             btn.type = "button";
             btn.title = "翻译选中内容";
 
-            const img = document.createElement("img");
-            img.src = chrome.runtime.getURL("icons/32.png");
-            img.alt = "翻译";
-            btn.appendChild(img);
+            const char = document.createElement("span");
+            char.className = "char";
+            char.textContent = "翻";
+            btn.appendChild(char);
 
             const { x, y } = this.computePosition(rect);
             btn.style.left = `${x}px`;

@@ -68,7 +68,7 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
             startTranslation(lastText);
         },
         onCancelLong: () => { disconnect(); },
-    });
+    }, text);
 
     if (text.length > settings.longTextThreshold) {
         card.requestLongConfirm(text.length);
