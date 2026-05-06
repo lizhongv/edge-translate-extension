@@ -20,15 +20,23 @@ const notifyRestricted = () => {
     });
 };
 
-chrome.runtime.onInstalled.addListener(() => {
+function registerContextMenu(): void {
     chrome.contextMenus.removeAll(() => {
         chrome.contextMenus.create({
             id: MENU_ID,
             title: "翻译选中内容",
             contexts: ["selection"],
+        }, () => {
+            const err = chrome.runtime.lastError;
+            if (err) console.error("[翻译插件] 注册右键菜单失败:", err.message);
+            else console.log("[翻译插件] 右键菜单已注册");
         });
     });
-});
+}
+
+chrome.runtime.onInstalled.addListener(registerContextMenu);
+chrome.runtime.onStartup.addListener(registerContextMenu);
+registerContextMenu();
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId !== MENU_ID) return;
