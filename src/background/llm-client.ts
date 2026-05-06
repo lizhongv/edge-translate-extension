@@ -1,4 +1,4 @@
-import type { LLMError } from "../shared/types";
+import type { LLMError, Settings } from "../shared/types";
 
 const TOKEN_HINT = /token|context length|maximum length|too long/i;
 
@@ -92,5 +92,132 @@ export async function* streamFromResponse(response: Response): AsyncGenerator<st
         }
     } finally {
         reader.releaseLock();
+    }
+}
+
+type FetchFn = typeof fetch;
+
+const sleep = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+        clearTimeout(t);
+        reject(new DOMException("aborted", "AbortError"));
+    }, { once: true });
+});
+
+const buildBody = (text: string, target: string, secondary: string, settings: Settings) => {
+    const system = settings.systemPrompt
+        .replaceAll("{{TARGET_LANG}}", target)
+        .replaceAll("{{SECONDARY_LANG}}", secondary);
+    return JSON.stringify({
+        model: settings.model,
+        stream: true,
+        temperature: settings.temperature,
+        messages: [
+            { role: "system", content: system },
+            { role: "user", content: text },
+        ],
+    });
+};
+
+const buildHeaders = (settings: Settings): HeadersInit => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${settings.apiKey}`,
+    ...settings.customHeaders,
+});
+
+const RETRY_DELAYS_RATE_LIMIT = [1000, 3000];
+const RETRY_DELAYS_NETWORK = [500, 2000];
+const RETRY_DELAYS_5XX = [1000];
+
+const pickDelays = (err: LLMError): number[] => {
+    if (err.code === "rate_limit") return RETRY_DELAYS_RATE_LIMIT;
+    if (err.code === "network") return RETRY_DELAYS_NETWORK;
+    if (err.code === "unknown" && err.httpStatus && err.httpStatus >= 500) return RETRY_DELAYS_5XX;
+    return [];
+};
+
+async function attempt(
+    text: string,
+    target: string,
+    secondary: string,
+    settings: Settings,
+    signal: AbortSignal,
+    fetchFn: FetchFn
+): Promise<Response> {
+    const url = settings.baseUrl.replace(/\/$/, "") + "/chat/completions";
+    let response: Response;
+    try {
+        response = await fetchFn(url, {
+            method: "POST",
+            headers: buildHeaders(settings),
+            body: buildBody(text, target, secondary, settings),
+            signal,
+        });
+    } catch (err) {
+        throw normalizeError(null, null, err);
+    }
+    if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw normalizeError(response, body);
+    }
+    return response;
+}
+
+export async function* stream(
+    text: string,
+    target: string,
+    settings: Settings,
+    signal: AbortSignal,
+    fetchFn: FetchFn = fetch
+): AsyncGenerator<string> {
+    if (!settings.apiKey) {
+        throw {
+            code: "auth",
+            message: "请先在扩展设置中填入 API Key",
+            retryable: false,
+        } satisfies LLMError;
+    }
+    if (!settings.baseUrl) {
+        throw {
+            code: "auth",
+            message: "请先在扩展设置中填入 Base URL",
+            retryable: false,
+        } satisfies LLMError;
+    }
+
+    let response: Response | null = null;
+    let lastErr: LLMError | null = null;
+    const allDelays = [0, ...RETRY_DELAYS_RATE_LIMIT, ...RETRY_DELAYS_NETWORK, ...RETRY_DELAYS_5XX];
+    let attempts = 0;
+    while (attempts < allDelays.length + 1) {
+        try {
+            response = await attempt(text, target, settings.secondaryTarget, settings, signal, fetchFn);
+            break;
+        } catch (e) {
+            const err = e as LLMError;
+            lastErr = err;
+            if (!err.retryable) throw err;
+            const delays = pickDelays(err);
+            if (attempts >= delays.length) throw err;
+            await sleep(delays[attempts], signal);
+            attempts++;
+        }
+    }
+    if (!response) throw lastErr ?? { code: "unknown", message: "无响应", retryable: false } as LLMError;
+
+    try {
+        for await (const chunk of streamFromResponse(response)) {
+            yield chunk;
+        }
+    } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") {
+            throw normalizeError(null, null, e);
+        }
+        throw {
+            code: "bad_response",
+            message: "翻译过程中断，请重试",
+            retryable: false,
+        } satisfies LLMError;
     }
 }
