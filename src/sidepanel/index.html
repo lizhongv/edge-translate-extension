@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>法译查鉴 - 历史</title>
+    <link rel="stylesheet" href="./sidepanel.css" />
+</head>
+<body>
+    <header>
+        <h1>翻译历史</h1>
+        <button id="clear">清空</button>
+    </header>
+    <main id="list"></main>
+    <template id="item-tpl">
+        <article class="item">
+            <div class="meta">
+                <span class="time"></span>
+                <span class="model"></span>
+                <button class="del" title="删除">×</button>
+            </div>
+            <div class="src"></div>
+            <div class="dst"></div>
+            <div class="actions">
+                <button class="copy">复制译文</button>
+            </div>
+        </article>
+    </template>
+    <script type="module" src="./index.ts"></script>
+</body>
+</html>
