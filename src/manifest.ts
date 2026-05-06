@@ -3,7 +3,7 @@ import pkg from "../package.json" with { type: "json" };
 
 export default defineManifest({
     manifest_version: 3,
-    name: "法译查鉴",
+    name: "翻译插件",
     version: pkg.version,
     description: "右键划词调用 OpenAI 兼容大模型流式翻译",
     permissions: [
@@ -31,7 +31,7 @@ export default defineManifest({
     },
     options_page: "src/options/index.html",
     action: {
-        default_title: "法译查鉴 - 打开历史",
+        default_title: "翻译插件 - 打开历史",
     },
     commands: {
         translate: {

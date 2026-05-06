@@ -35,7 +35,7 @@ export class FloatingCard {
 
         const header = document.createElement("div");
         header.className = "header";
-        header.innerHTML = '<span>法译查鉴</span><span class="status"></span>';
+        header.innerHTML = '<span>翻译插件</span><span class="status"></span>';
         const body = document.createElement("div");
         body.className = "body";
         const footer = document.createElement("div");

@@ -63,9 +63,9 @@ export const DEFAULT_SYSTEM_PROMPT =
     "If the input is already in {{TARGET_LANG}}, translate it into {{SECONDARY_LANG}} instead.";
 
 export const DEFAULT_SETTINGS: Settings = {
-    baseUrl: "",
+    baseUrl: "https://api.deepseek.com/v1",
     apiKey: "",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
     temperature: 0.2,
     customHeaders: {},

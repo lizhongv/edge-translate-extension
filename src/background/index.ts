@@ -15,7 +15,7 @@ const notifyRestricted = () => {
     chrome.notifications.create({
         type: "basic",
         iconUrl: chrome.runtime.getURL("icons/128.png"),
-        title: "法译查鉴",
+        title: "翻译插件",
         message: "无法在此页面翻译（受限页面）",
     });
 };
