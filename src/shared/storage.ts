@@ -5,6 +5,7 @@ const SETTINGS_LOCAL_KEY = "settingsLocal";
 const HISTORY_KEY = "history";
 const CACHE_KEY = "cache";
 const CACHE_MAX_ENTRIES = 500;
+const STORAGE_TIMEOUT_MS = 1500;
 
 const SENSITIVE_KEYS: Array<keyof Settings> = ["apiKey", "customHeaders"];
 
@@ -18,21 +19,41 @@ const splitSettings = (s: Settings): { syncPart: Partial<Settings>; localPart: P
     return { syncPart, localPart };
 };
 
+function withTimeout<T>(promise: Promise<T>, fallback: T, label: string): Promise<T> {
+    return new Promise<T>((resolve) => {
+        const timer = setTimeout(() => {
+            console.warn(`[翻译插件] storage ${label} 超过 ${STORAGE_TIMEOUT_MS}ms，使用默认值（chrome.storage.sync 可能因 Edge 同步异常而卡住）`);
+            resolve(fallback);
+        }, STORAGE_TIMEOUT_MS);
+        promise.then((v) => { clearTimeout(timer); resolve(v); })
+               .catch((e) => { clearTimeout(timer); console.warn(`[翻译插件] storage ${label} 失败:`, e); resolve(fallback); });
+    });
+}
+
 export async function getSettings(): Promise<Settings> {
-    const sync = await chrome.storage.sync.get(SETTINGS_SYNC_KEY);
-    const local = await chrome.storage.local.get(SETTINGS_LOCAL_KEY);
+    const [sync, local] = await Promise.all([
+        withTimeout(chrome.storage.sync.get(SETTINGS_SYNC_KEY), {} as Record<string, unknown>, "sync.get(settings)"),
+        withTimeout(chrome.storage.local.get(SETTINGS_LOCAL_KEY), {} as Record<string, unknown>, "local.get(settings)"),
+    ]);
     return {
         ...DEFAULT_SETTINGS,
-        ...(sync[SETTINGS_SYNC_KEY] ?? {}),
-        ...(local[SETTINGS_LOCAL_KEY] ?? {}),
+        ...((sync[SETTINGS_SYNC_KEY] as Partial<Settings> | undefined) ?? {}),
+        ...((local[SETTINGS_LOCAL_KEY] as Partial<Settings> | undefined) ?? {}),
     };
 }
 
 export type PublicSettings = Omit<Settings, "apiKey" | "customHeaders">;
 
 export async function getPublicSettings(): Promise<PublicSettings> {
-    const sync = await chrome.storage.sync.get(SETTINGS_SYNC_KEY);
-    const merged = { ...DEFAULT_SETTINGS, ...(sync[SETTINGS_SYNC_KEY] ?? {}) };
+    const sync = await withTimeout(
+        chrome.storage.sync.get(SETTINGS_SYNC_KEY),
+        {} as Record<string, unknown>,
+        "sync.get(public)"
+    );
+    const merged = {
+        ...DEFAULT_SETTINGS,
+        ...((sync[SETTINGS_SYNC_KEY] as Partial<Settings> | undefined) ?? {}),
+    };
     const { apiKey: _a, customHeaders: _c, ...pub } = merged;
     return pub;
 }
