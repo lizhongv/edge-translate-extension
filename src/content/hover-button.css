@@ -1,0 +1,48 @@
+:host {
+    all: initial;
+    color-scheme: light dark;
+}
+.btn {
+    position: fixed;
+    z-index: 2147483647;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f8cff 0%, #2563eb 100%);
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.12s, box-shadow 0.12s;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
+}
+.btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+.btn:active {
+    transform: scale(0.96);
+}
+.char {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1;
+    letter-spacing: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    user-select: none;
+}
+@media (prefers-color-scheme: dark) {
+    .btn {
+        background: linear-gradient(135deg, #5b94ff 0%, #2563eb 100%);
+        border-color: #1a1f29;
+        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+    .btn:hover {
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+}

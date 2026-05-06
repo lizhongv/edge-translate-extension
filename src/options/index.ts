@@ -15,6 +15,7 @@ const inputs = {
     secondaryTarget: $<HTMLInputElement>("secondaryTarget"),
     longTextThreshold: $<HTMLInputElement>("longTextThreshold"),
     historyLimit: $<HTMLInputElement>("historyLimit"),
+    enableHoverButton: $<HTMLInputElement>("enableHoverButton"),
 };
 
 function fillForm(s: Settings): void {
@@ -28,6 +29,7 @@ function fillForm(s: Settings): void {
     inputs.secondaryTarget.value = s.secondaryTarget;
     inputs.longTextThreshold.value = String(s.longTextThreshold);
     inputs.historyLimit.value = String(s.historyLimit);
+    inputs.enableHoverButton.checked = s.enableHoverButton;
 }
 
 function readForm(): Partial<Settings> {
@@ -49,6 +51,7 @@ function readForm(): Partial<Settings> {
         secondaryTarget: inputs.secondaryTarget.value.trim(),
         longTextThreshold: Math.max(100, Number(inputs.longTextThreshold.value) || 5000),
         historyLimit: Math.max(10, Number(inputs.historyLimit.value) || 200),
+        enableHoverButton: inputs.enableHoverButton.checked,
     };
 }
 

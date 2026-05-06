@@ -16,10 +16,12 @@ export class FloatingCard {
     private footerEl: HTMLDivElement | null = null;
     headerEl: HTMLDivElement | null = null;
     private cb: CardCallbacks = {};
+    private sourceText = "";
 
-    mount(rect: DOMRect | null, callbacks: CardCallbacks = {}): void {
+    mount(rect: DOMRect | null, callbacks: CardCallbacks = {}, sourceText = ""): void {
         this.unmount();
         this.cb = callbacks;
+        this.sourceText = sourceText;
         this.host = document.createElement("div");
         this.host.style.all = "initial";
         this.root = this.host.attachShadow({ mode: "closed" });
@@ -95,14 +97,20 @@ export class FloatingCard {
         if (!this.bodyEl || !this.footerEl) return;
         this.bodyEl.textContent = full;
         this.footerEl.innerHTML = "";
-        const copy = this.makeButton("复制", () => {
+        if (this.sourceText) {
+            const copySrc = this.makeButton("复制原文", () => {
+                navigator.clipboard.writeText(this.sourceText).catch(() => {/* ignore */});
+            });
+            this.footerEl.appendChild(copySrc);
+        }
+        const copyDst = this.makeButton("复制译文", () => {
             navigator.clipboard.writeText(full).catch(() => {/* ignore */});
         });
         const close = this.makeButton("关闭", () => {
             this.cb.onClose?.();
             this.unmount();
         });
-        this.footerEl.appendChild(copy);
+        this.footerEl.appendChild(copyDst);
         this.footerEl.appendChild(close);
     }
 
@@ -134,8 +142,13 @@ export class FloatingCard {
                 this.cb.onRetry?.();
             }));
         }
+        if (this.sourceText) {
+            this.footerEl.appendChild(this.makeButton("复制原文", () => {
+                navigator.clipboard.writeText(this.sourceText).catch(() => {/* ignore */});
+            }));
+        }
         if (partial && partial.length > 0) {
-            this.footerEl.appendChild(this.makeButton("复制部分", () => {
+            this.footerEl.appendChild(this.makeButton("复制部分译文", () => {
                 navigator.clipboard.writeText(partial).catch(() => {/* ignore */});
             }));
         }
@@ -154,6 +167,7 @@ export class FloatingCard {
         this.bodyEl = null;
         this.footerEl = null;
         this.headerEl = null;
+        this.sourceText = "";
     }
 
     isMounted(): boolean {

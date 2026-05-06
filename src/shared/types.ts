@@ -10,6 +10,7 @@ export type Settings = {
     longTextThreshold: number;
     historyLimit: number;
     shortcut: string;
+    enableHoverButton: boolean;
 };
 
 export type HistoryItem = {
@@ -74,4 +75,5 @@ export const DEFAULT_SETTINGS: Settings = {
     longTextThreshold: 5000,
     historyLimit: 200,
     shortcut: "Alt+T",
+    enableHoverButton: true,
 };

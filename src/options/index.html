@@ -36,6 +36,10 @@
             <h2>行为</h2>
             <label>长文软提示阈值（字符）<input id="longTextThreshold" type="number" min="100" /></label>
             <label>历史保留上限<input id="historyLimit" type="number" min="10" /></label>
+            <label class="checkbox-label">
+                <input id="enableHoverButton" type="checkbox" />
+                启用划词浮标（选中文字后在选区右下角显示一键翻译按钮；输入框不出现）
+            </label>
             <p class="muted">
                 快捷键在 <code>edge://extensions/shortcuts</code> 处修改。
                 当前默认：<span id="shortcut">Alt+T</span>。
