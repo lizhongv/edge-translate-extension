@@ -74,7 +74,10 @@ $<HTMLButtonElement>("testConn").addEventListener("click", async () => {
         let token = "";
         for await (const t of stream("hi", "中文", settings, ctrl.signal)) {
             token += t;
-            if (token.length > 4) ctrl.abort();
+            if (token.length > 4) {
+                ctrl.abort();
+                break;
+            }
         }
         const dt = Math.round(performance.now() - t0);
         result.textContent = `✅ ${settings.model} 响应正常 (${dt}ms)`;
