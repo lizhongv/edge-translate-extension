@@ -16,6 +16,9 @@ const inputs = {
     longTextThreshold: $<HTMLInputElement>("longTextThreshold"),
     historyLimit: $<HTMLInputElement>("historyLimit"),
     enableHoverButton: $<HTMLInputElement>("enableHoverButton"),
+    enableQA: $<HTMLInputElement>("enableQA"),
+    qaSystemPrompt: $<HTMLTextAreaElement>("qaSystemPrompt"),
+    qaMaxTurns: $<HTMLInputElement>("qaMaxTurns"),
 };
 
 function fillForm(s: Settings): void {
@@ -30,6 +33,9 @@ function fillForm(s: Settings): void {
     inputs.longTextThreshold.value = String(s.longTextThreshold);
     inputs.historyLimit.value = String(s.historyLimit);
     inputs.enableHoverButton.checked = s.enableHoverButton;
+    inputs.enableQA.checked = s.enableQA;
+    inputs.qaSystemPrompt.value = s.qaSystemPrompt;
+    inputs.qaMaxTurns.value = String(s.qaMaxTurns);
 }
 
 function readForm(): Partial<Settings> {
@@ -52,6 +58,9 @@ function readForm(): Partial<Settings> {
         longTextThreshold: Math.max(100, Number(inputs.longTextThreshold.value) || 5000),
         historyLimit: Math.max(10, Number(inputs.historyLimit.value) || 200),
         enableHoverButton: inputs.enableHoverButton.checked,
+        enableQA: inputs.enableQA.checked,
+        qaSystemPrompt: inputs.qaSystemPrompt.value,
+        qaMaxTurns: Math.min(20, Math.max(1, Number(inputs.qaMaxTurns.value) || 6)),
     };
 }
 

@@ -46,6 +46,20 @@
             </p>
         </section>
 
+        <section>
+            <h2>问答</h2>
+            <label class="checkbox-label">
+                <input id="enableQA" type="checkbox" />
+                在工具栏中显示「问答」按钮
+            </label>
+            <label>问答系统提示词
+                <textarea id="qaSystemPrompt" rows="6"></textarea>
+            </label>
+            <label>多轮上限（轮数，超出后自动丢弃最早一对）
+                <input id="qaMaxTurns" type="number" min="1" max="20" />
+            </label>
+        </section>
+
         <div class="bar">
             <button id="save">保存</button>
             <span id="saveResult" class="muted"></span>
