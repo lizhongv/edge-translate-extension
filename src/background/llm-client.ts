@@ -1,4 +1,8 @@
-import type { LLMError, Settings } from "../shared/types";
+import type { ChatMessage, LLMError, Settings } from "../shared/types";
+
+export type StreamInput =
+    | { kind: "translate"; text: string; target: string }
+    | { kind: "chat"; system: string; messages: ChatMessage[] };
 
 const TOKEN_HINT = /token|context length|maximum length|too long/i;
 
@@ -105,18 +109,24 @@ const sleep = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, r
     }, { once: true });
 });
 
-const buildBody = (text: string, target: string, secondary: string, settings: Settings) => {
-    const system = settings.systemPrompt
-        .replaceAll("{{TARGET_LANG}}", target)
-        .replaceAll("{{SECONDARY_LANG}}", secondary);
+const buildBodyFromInput = (input: StreamInput, secondary: string, settings: Settings): string => {
+    let messages: { role: "system" | "user" | "assistant"; content: string }[];
+    if (input.kind === "translate") {
+        const system = settings.systemPrompt
+            .replaceAll("{{TARGET_LANG}}", input.target)
+            .replaceAll("{{SECONDARY_LANG}}", secondary);
+        messages = [
+            { role: "system", content: system },
+            { role: "user", content: input.text },
+        ];
+    } else {
+        messages = [{ role: "system", content: input.system }, ...input.messages];
+    }
     return JSON.stringify({
         model: settings.model,
         stream: true,
         temperature: settings.temperature,
-        messages: [
-            { role: "system", content: system },
-            { role: "user", content: text },
-        ],
+        messages,
     });
 };
 
@@ -138,8 +148,7 @@ const pickDelays = (err: LLMError): number[] => {
 };
 
 async function attempt(
-    text: string,
-    target: string,
+    input: StreamInput,
     secondary: string,
     settings: Settings,
     signal: AbortSignal,
@@ -151,7 +160,7 @@ async function attempt(
         response = await fetchFn(url, {
             method: "POST",
             headers: buildHeaders(settings),
-            body: buildBody(text, target, secondary, settings),
+            body: buildBodyFromInput(input, secondary, settings),
             signal,
         });
     } catch (err) {
@@ -165,8 +174,7 @@ async function attempt(
 }
 
 export async function* stream(
-    text: string,
-    target: string,
+    input: StreamInput,
     settings: Settings,
     signal: AbortSignal,
     fetchFn: FetchFn = fetch
@@ -192,7 +200,7 @@ export async function* stream(
     let attempts = 0;
     while (attempts < allDelays.length + 1) {
         try {
-            response = await attempt(text, target, settings.secondaryTarget, settings, signal, fetchFn);
+            response = await attempt(input, settings.secondaryTarget, settings, signal, fetchFn);
             break;
         } catch (e) {
             const err = e as LLMError;
