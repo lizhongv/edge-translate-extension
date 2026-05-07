@@ -1,21 +1,5 @@
 import buttonCss from "./hover-button.css?inline";
-
-export function isInEditable(node: Node | null): boolean {
-    let n: Node | null = node;
-    while (n) {
-        if (n instanceof HTMLElement) {
-            if (n.isContentEditable) return true;
-            // Fallback for environments (e.g. jsdom) where isContentEditable
-            // does not reflect the attribute set via setAttribute.
-            const ce = n.getAttribute("contenteditable");
-            if (ce === "" || ce === "true" || ce === "plaintext-only") return true;
-            const tag = n.tagName;
-            if (tag === "INPUT" || tag === "TEXTAREA") return true;
-        }
-        n = n.parentNode;
-    }
-    return false;
-}
+export { isInEditable } from "./dom-utils";
 
 const BTN_SIZE = 28;
 const MARGIN = 4;
