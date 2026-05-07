@@ -1,7 +1,7 @@
 import { translate } from "./translator";
 import {
     rtShowCard, rtRequestTranslate, rtHistoryUpdated,
-    isTranslateMsg, isRuntimeMessage,
+    isTaskMsg, isRuntimeMessage,
 } from "../shared/messages";
 
 const MENU_ID = "fayichajian-translate-selection";
@@ -100,7 +100,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 chrome.runtime.onConnect.addListener((port) => {
-    if (port.name !== "translate") return;
+    if (port.name !== "task") return;
     const ctrl = new AbortController();
     let pageOrigin: string | undefined;
     try {
@@ -108,9 +108,13 @@ chrome.runtime.onConnect.addListener((port) => {
     } catch { /* ignore */ }
 
     port.onMessage.addListener(async (msg) => {
-        if (!isTranslateMsg(msg)) return;
-        await translate(msg.text, port, ctrl.signal, undefined, pageOrigin);
-        chrome.runtime.sendMessage(rtHistoryUpdated()).catch(() => {/* no listener ok */});
+        if (!isTaskMsg(msg)) return;
+        const p = msg.payload;
+        if (p.task === "translate") {
+            await translate(p.text, port, ctrl.signal, undefined, pageOrigin);
+            chrome.runtime.sendMessage(rtHistoryUpdated()).catch(() => {/* no listener ok */});
+        }
+        // qa branch added in Task 17
     });
 
     port.onDisconnect.addListener(() => {

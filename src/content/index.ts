@@ -2,7 +2,7 @@ import { FloatingCard } from "./floating-card";
 import { HoverButton, isInEditable } from "./hover-button";
 import { getSelectionRect, getSelectionText } from "./selection";
 import { getPublicSettings } from "../shared/storage";
-import { msgTranslate, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
+import { msgTaskTranslate, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
 import type { LLMError, RuntimeMessage } from "../shared/types";
 
 console.log("[翻译插件] content script 已加载:", location.href);
@@ -23,7 +23,7 @@ function disconnect(): void {
 function startTranslation(text: string): void {
     partial = "";
     disconnect();
-    const port = chrome.runtime.connect({ name: "translate" });
+    const port = chrome.runtime.connect({ name: "task" });
     currentPort = port;
     port.onMessage.addListener((msg: unknown) => {
         if (isTokenMsg(msg)) {
@@ -38,7 +38,7 @@ function startTranslation(text: string): void {
     port.onDisconnect.addListener(() => {
         currentPort = null;
     });
-    port.postMessage(msgTranslate(text));
+    port.postMessage(msgTaskTranslate(text));
 }
 
 async function handleTrigger(fallbackText?: string): Promise<void> {
