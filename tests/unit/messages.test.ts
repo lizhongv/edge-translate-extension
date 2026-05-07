@@ -1,13 +1,25 @@
 import { describe, it, expect } from "vitest";
 import {
-    msgTranslate, msgToken, msgDone, msgError,
-    isTranslateMsg, isTokenMsg, isDoneMsg, isErrorMsg,
+    msgTaskTranslate, msgTaskQA, msgToken, msgDone, msgError,
+    isTaskMsg, isTokenMsg, isDoneMsg, isErrorMsg,
     rtShowCard, rtRequestTranslate, rtHistoryUpdated, rtOpenOptions,
+    rtQASessionUpdated, rtOpenQA,
+    isRuntimeMessage,
 } from "../../src/shared/messages";
 
 describe("port message constructors", () => {
-    it("msgTranslate", () => {
-        expect(msgTranslate("hi")).toEqual({ type: "translate", text: "hi" });
+    it("msgTaskTranslate", () => {
+        expect(msgTaskTranslate("hi")).toEqual({
+            type: "task",
+            payload: { task: "translate", text: "hi" },
+        });
+    });
+    it("msgTaskQA", () => {
+        const msgs = [{ role: "user" as const, content: "Q" }];
+        expect(msgTaskQA("sid", "src", msgs)).toEqual({
+            type: "task",
+            payload: { task: "qa", sessionId: "sid", sourceText: "src", messages: msgs },
+        });
     });
     it("msgToken", () => {
         expect(msgToken("a")).toEqual({ type: "token", chunk: "a" });
@@ -22,11 +34,19 @@ describe("port message constructors", () => {
 });
 
 describe("type guards", () => {
-    it("isTranslateMsg", () => {
-        expect(isTranslateMsg({ type: "translate", text: "x" })).toBe(true);
-        expect(isTranslateMsg({ type: "token", chunk: "x" })).toBe(false);
-        expect(isTranslateMsg(null)).toBe(false);
-        expect(isTranslateMsg({})).toBe(false);
+    it("isTaskMsg accepts translate", () => {
+        expect(isTaskMsg({ type: "task", payload: { task: "translate", text: "x" } })).toBe(true);
+    });
+    it("isTaskMsg accepts qa", () => {
+        expect(isTaskMsg({
+            type: "task",
+            payload: { task: "qa", sessionId: "s", sourceText: "x", messages: [] },
+        })).toBe(true);
+    });
+    it("isTaskMsg rejects malformed", () => {
+        expect(isTaskMsg({ type: "task" })).toBe(false);
+        expect(isTaskMsg({ type: "task", payload: { task: "other" } })).toBe(false);
+        expect(isTaskMsg(null)).toBe(false);
     });
     it("isTokenMsg", () => {
         expect(isTokenMsg({ type: "token", chunk: "x" })).toBe(true);
@@ -43,8 +63,19 @@ describe("type guards", () => {
 describe("runtime message constructors", () => {
     it("constants", () => {
         expect(rtShowCard()).toEqual({ type: "showCard" });
+        expect(rtShowCard("hi")).toEqual({ type: "showCard", text: "hi" });
         expect(rtRequestTranslate()).toEqual({ type: "requestTranslate" });
         expect(rtHistoryUpdated()).toEqual({ type: "historyUpdated" });
         expect(rtOpenOptions()).toEqual({ type: "openOptions" });
+        expect(rtQASessionUpdated("sid-1")).toEqual({ type: "qaSessionUpdated", sessionId: "sid-1" });
+        expect(rtOpenQA()).toEqual({ type: "openQA" });
+        expect(rtOpenQA("text")).toEqual({ type: "openQA", text: "text" });
+    });
+    it("isRuntimeMessage accepts all known types", () => {
+        expect(isRuntimeMessage({ type: "showCard" })).toBe(true);
+        expect(isRuntimeMessage({ type: "qaSessionUpdated", sessionId: "x" })).toBe(true);
+        expect(isRuntimeMessage({ type: "openQA" })).toBe(true);
+        expect(isRuntimeMessage({ type: "unknown" })).toBe(false);
+        expect(isRuntimeMessage(null)).toBe(false);
     });
 });
