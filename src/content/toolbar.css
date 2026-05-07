@@ -1,0 +1,55 @@
+:host {
+    all: initial;
+    color-scheme: light dark;
+}
+.bar {
+    position: fixed;
+    z-index: 2147483647;
+    display: inline-flex;
+    align-items: stretch;
+    height: 28px;
+    background: linear-gradient(135deg, #4f8cff 0%, #2563eb 100%);
+    border: 1.5px solid #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
+}
+.btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+}
+.btn + .btn {
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+.btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+.btn:active {
+    background: rgba(0, 0, 0, 0.12);
+}
+.char {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    user-select: none;
+}
+@media (prefers-color-scheme: dark) {
+    .bar {
+        background: linear-gradient(135deg, #5b94ff 0%, #2563eb 100%);
+        border-color: #1a1f29;
+        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+}
