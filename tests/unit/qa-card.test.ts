@@ -249,3 +249,37 @@ describe("QACard abort rollback", () => {
         expect(ta.disabled).toBe(false);
     });
 });
+
+describe("QACard error actions", () => {
+    it("auth error shows '打开设置' button → onOpenOptions", () => {
+        const c = new QACard();
+        const cb = makeCb();
+        c.mount(mkRect(10, 10, 100, 30), "src", cb);
+        const root = innerRoot(c);
+        const ta = root.querySelector<HTMLTextAreaElement>("textarea")!;
+        ta.value = "Q";
+        ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+        c.beginAssistant();
+        c.failAssistant({ code: "auth", message: "API Key 无效", retryable: false });
+        const openBtn = root.querySelector<HTMLButtonElement>(".action-options");
+        expect(openBtn).toBeTruthy();
+        openBtn!.click();
+        expect(cb.onOpenOptions).toHaveBeenCalledOnce();
+    });
+
+    it("retryable error shows '重试' button → onRetry", () => {
+        const c = new QACard();
+        const cb = makeCb();
+        c.mount(mkRect(10, 10, 100, 30), "src", cb);
+        const root = innerRoot(c);
+        const ta = root.querySelector<HTMLTextAreaElement>("textarea")!;
+        ta.value = "Q";
+        ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+        c.beginAssistant();
+        c.failAssistant({ code: "network", message: "网络异常", retryable: true });
+        const retryBtn = root.querySelector<HTMLButtonElement>(".action-retry");
+        expect(retryBtn).toBeTruthy();
+        retryBtn!.click();
+        expect(cb.onRetry).toHaveBeenCalledOnce();
+    });
+});

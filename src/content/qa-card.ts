@@ -181,8 +181,37 @@ export class QACard {
             const c = this.currentAssistantBubble.querySelector<HTMLElement>(".content");
             if (c && partial) c.textContent = partial;
             setBubbleError(this.currentAssistantBubble, err.message);
+
+            const actions = document.createElement("div");
+            actions.className = "actions";
+            if (err.code === "auth") {
+                const btn = document.createElement("button");
+                btn.className = "copy action-options";
+                btn.type = "button";
+                btn.textContent = "打开设置";
+                btn.addEventListener("click", () => this.cb?.onOpenOptions());
+                actions.appendChild(btn);
+            }
+            if (err.retryable || err.code === "bad_response" || err.code === "unknown") {
+                const btn = document.createElement("button");
+                btn.className = "copy action-retry";
+                btn.type = "button";
+                btn.textContent = "重试";
+                btn.addEventListener("click", () => this.cb?.onRetry());
+                actions.appendChild(btn);
+            }
+            if (partial && partial.length > 0) {
+                const btn = document.createElement("button");
+                btn.className = "copy action-copy-partial";
+                btn.type = "button";
+                btn.textContent = "复制部分";
+                btn.addEventListener("click", () => {
+                    navigator.clipboard.writeText(partial).catch(() => {/* ignore */});
+                });
+                actions.appendChild(btn);
+            }
+            this.currentAssistantBubble.appendChild(actions);
         }
-        // failed turn: don't add assistant to messages
         this.currentAssistantBubble = null;
         this.streaming = false;
         if (this.textareaEl) this.textareaEl.disabled = false;
