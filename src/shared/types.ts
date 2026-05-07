@@ -57,6 +57,21 @@ export type CacheEntry = {
     timestamp: number;
 };
 
+export type ChatMessage = {
+    role: "user" | "assistant";
+    content: string;
+};
+
+export type QASession = {
+    id: string;
+    sourceText: string;
+    pageOrigin?: string;
+    model: string;
+    createdAt: number;
+    updatedAt: number;
+    messages: ChatMessage[];
+};
+
 export const DEFAULT_SYSTEM_PROMPT =
     "You are a professional translator. Translate the user's input into {{TARGET_LANG}}.\n" +
     "Output only the translation itself: no explanations, no quotes, no markdown.\n" +
