@@ -18,7 +18,7 @@ export class FloatingCard {
     private cb: CardCallbacks = {};
     private sourceText = "";
 
-    mount(rect: DOMRect | null, callbacks: CardCallbacks = {}, sourceText = ""): void {
+    mount(rect: DOMRect | null, callbacks: CardCallbacks = {}, sourceText = "", title = "翻译"): void {
         this.unmount();
         this.cb = callbacks;
         this.sourceText = sourceText;
@@ -37,7 +37,7 @@ export class FloatingCard {
 
         const header = document.createElement("div");
         header.className = "header";
-        header.innerHTML = '<span>翻译插件</span><span class="status"></span>';
+        header.innerHTML = `<span>${title}</span><span class="status"></span>`;
         const body = document.createElement("div");
         body.className = "body";
         const footer = document.createElement("div");
