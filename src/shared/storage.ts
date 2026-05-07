@@ -113,3 +113,34 @@ export async function writeCache(key: string, value: string): Promise<void> {
     }
     await writeCacheStore(store);
 }
+
+const QA_SESSIONS_KEY = "qa_sessions";
+
+export async function getQASessions(): Promise<import("./types").QASession[]> {
+    const r = await chrome.storage.local.get(QA_SESSIONS_KEY);
+    const list = (r[QA_SESSIONS_KEY] as import("./types").QASession[]) ?? [];
+    return [...list].sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+export async function upsertQASession(session: import("./types").QASession): Promise<void> {
+    const settings = await getSettings();
+    const r = await chrome.storage.local.get(QA_SESSIONS_KEY);
+    const existing = (r[QA_SESSIONS_KEY] as import("./types").QASession[]) ?? [];
+    const filtered = existing.filter(s => s.id !== session.id);
+    const next = [session, ...filtered]
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, settings.historyLimit);
+    await chrome.storage.local.set({ [QA_SESSIONS_KEY]: next });
+}
+
+export async function deleteQASession(id: string): Promise<void> {
+    const r = await chrome.storage.local.get(QA_SESSIONS_KEY);
+    const list = (r[QA_SESSIONS_KEY] as import("./types").QASession[]) ?? [];
+    await chrome.storage.local.set({
+        [QA_SESSIONS_KEY]: list.filter(s => s.id !== id),
+    });
+}
+
+export async function clearQASessions(): Promise<void> {
+    await chrome.storage.local.set({ [QA_SESSIONS_KEY]: [] });
+}
