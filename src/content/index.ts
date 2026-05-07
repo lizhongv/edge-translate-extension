@@ -1,5 +1,6 @@
 import { FloatingCard } from "./floating-card";
-import { HoverButton, isInEditable } from "./hover-button";
+import { Toolbar } from "./toolbar";
+import { isInEditable } from "./dom-utils";
 import { getSelectionRect, getSelectionText } from "./selection";
 import { getPublicSettings } from "../shared/storage";
 import { msgTaskTranslate, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
@@ -8,7 +9,12 @@ import type { LLMError, RuntimeMessage } from "../shared/types";
 console.log("[翻译插件] content script 已加载:", location.href);
 
 const card = new FloatingCard();
-const hoverButton = new HoverButton();
+const toolbar = new Toolbar();
+
+const TOOLBAR_ACTIONS = [
+    { id: "translate", char: "翻", label: "翻译" },
+    { id: "qa", char: "问", label: "问答" },
+];
 let currentPort: chrome.runtime.Port | null = null;
 let lastText = "";
 let partial = "";
@@ -49,7 +55,7 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
         console.warn("[翻译插件] 没有可翻译的文本（选区已丢失且菜单未带文本）");
         return;
     }
-    hoverButton.hide();
+    toolbar.hide();
     const rect = getSelectionRect();
     lastText = text;
     const settings = await getPublicSettings();
@@ -79,55 +85,61 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
 
 // ===== 划词浮标编排 =====
 
-async function maybeShowHoverButton(): Promise<void> {
+async function maybeShowToolbar(): Promise<void> {
     const text = getSelectionText();
     if (!text || text.length < 2) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     if (isInEditable(sel.anchorNode)) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     const settings = await getPublicSettings();
     if (settings.enableHoverButton === false) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     const rect = getSelectionRect();
     if (!rect) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
-    hoverButton.show(rect, () => {
-        void handleTrigger(text);
+    const actions = TOOLBAR_ACTIONS.filter(a => a.id !== "qa" || settings.enableQA);
+    toolbar.show(rect, actions, (id) => {
+        if (id === "translate") {
+            void handleTrigger(text);
+        } else if (id === "qa") {
+            // wired in Task 18
+            console.log("[翻译插件] QA 入口（暂未实现）", text);
+        }
     });
 }
 
 document.addEventListener("mouseup", () => {
-    setTimeout(() => { void maybeShowHoverButton(); }, 0);
+    setTimeout(() => { void maybeShowToolbar(); }, 0);
 });
 
 document.addEventListener("selectionchange", () => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.toString().trim().length === 0) {
-        hoverButton.hide();
+        toolbar.hide();
     }
 });
 
 document.addEventListener("mousedown", (e) => {
-    if (!hoverButton.isShown()) return;
-    if (hoverButton.contains(e.target)) return;
-    hoverButton.hide();
+    if (!toolbar.isShown()) return;
+    if (toolbar.contains(e.target)) return;
+    toolbar.hide();
 }, true);
 
 window.addEventListener("scroll", () => {
-    hoverButton.hide();
+    toolbar.hide();
 }, true);
 
 // ===== 现有 chrome.runtime 消息入口 =====
