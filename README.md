@@ -254,8 +254,11 @@ edge-translate-extension/
 │   │   ├── selection.ts             # 选中文本 / 包围矩形
 │   │   ├── floating-card.ts         # Shadow DOM 浮动卡片（流式渲染）
 │   │   ├── card.css
-│   │   ├── hover-button.ts          # Shadow DOM 划词浮标 + isInEditable 辅助
-│   │   └── hover-button.css
+│   │   ├── toolbar.ts               # Shadow DOM 划词工具栏（翻 / 问 按钮）
+│   │   ├── toolbar.css
+│   │   ├── qa-card.ts               # Shadow DOM 问答卡片（多轮对话）
+│   │   ├── qa-card.css
+│   │   └── dom-utils.ts             # isInEditable 等 DOM 辅助
 │   ├── sidepanel/                 # 侧边栏（历史视图）
 │   │   ├── index.html
 │   │   ├── index.ts
@@ -268,7 +271,7 @@ edge-translate-extension/
 │       └── css.d.ts                 # Vite ?inline CSS 模块声明
 ├── tests/
 │   ├── setup.ts                   # chrome.* mock + webcrypto polyfill
-│   └── unit/                      # Vitest 单元测试（81 条）
+│   └── unit/                      # Vitest 单元测试（120 条）
 ├── public/
 │   └── icons/                     # 16/32/48/128 PNG（翻译主题）
 ├── docs/superpowers/
@@ -308,9 +311,8 @@ npm run test:coverage     # 含覆盖率报告
 - `background/llm-client.ts` — 错误归一化 / SSE 解析 / 流式 + 重试（20 用例）
 - `background/translator.ts` — 翻译编排（4 用例）
 - `content/selection.ts` — 选区辅助（3 用例）
-- `content/hover-button.ts` — 浮标 + isInEditable（17 用例）
-- `content/toolbar.ts` — 划词工具栏（翻 / 问 按钮）（新增）
-- `background/qa-session.ts` — 问答会话编排（新增）
+- `content/toolbar.ts` — 划词工具栏（翻 / 问 按钮）（含 isInEditable）
+- `background/qa.ts` — 问答会话编排（新增）
 
 UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 

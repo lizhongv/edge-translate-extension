@@ -1,6 +1,6 @@
 import {
     clearHistory, deleteHistoryItem, getHistory,
-    clearQASessions, deleteQASession, getQASessions, upsertQASession,
+    clearQASessions, deleteQASession, getQASessions,
 } from "../shared/storage";
 import {
     msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg,
@@ -199,7 +199,6 @@ async function detailSend(): Promise<void> {
                     messages: [...detailSession.messages, { role: "assistant", content: msg.full }],
                     updatedAt: Date.now(),
                 };
-                void upsertQASession(detailSession);
             }
             cleanupDetailPort();
         } else if (isErrorMsg(msg)) {

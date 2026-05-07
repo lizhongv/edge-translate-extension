@@ -13,12 +13,12 @@ const isRestrictedUrl = (url: string | undefined): boolean => {
     return /^(chrome|edge|about|chrome-extension|moz-extension|file):/i.test(url);
 };
 
-const notifyRestricted = () => {
+const notifyRestricted = (action: "翻译" | "问答" = "翻译") => {
     chrome.notifications.create({
         type: "basic",
         iconUrl: chrome.runtime.getURL("icons/128.png"),
         title: "翻译插件",
-        message: "无法在此页面翻译（受限页面）",
+        message: `无法在此页面${action}（受限页面）`,
     });
 };
 
@@ -76,13 +76,11 @@ async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (!tab?.id || isRestrictedUrl(tab.url)) {
-        notifyRestricted();
-        return;
-    }
     if (info.menuItemId === MENU_ID) {
+        if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("翻译"); return; }
         void dispatchToTab(tab.id, rtShowCard(info.selectionText));
     } else if (info.menuItemId === MENU_QA_ID) {
+        if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("问答"); return; }
         void dispatchToTab(tab.id, rtOpenQA(info.selectionText));
     }
 });
@@ -90,13 +88,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 chrome.commands.onCommand.addListener((command) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs[0];
-        if (!tab?.id || isRestrictedUrl(tab.url)) {
-            notifyRestricted();
-            return;
-        }
         if (command === "translate") {
+            if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("翻译"); return; }
             void dispatchToTab(tab.id, rtRequestTranslate());
         } else if (command === "qa") {
+            if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("问答"); return; }
             void dispatchToTab(tab.id, rtOpenQA());
         }
     });
