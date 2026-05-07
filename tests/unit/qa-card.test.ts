@@ -210,3 +210,42 @@ describe("QACard close", () => {
         expect(cb.onClose).toHaveBeenCalledOnce();
     });
 });
+
+describe("QACard turn cap notice", () => {
+    it("shows notice when message count >= maxTurns*2", () => {
+        const c = new QACard();
+        const cb = makeCb();
+        c.mount(mkRect(10, 10, 100, 30), "src", cb);
+        // 模拟已经积累 6 轮（12 条）
+        for (let i = 0; i < 6; i++) {
+            c.setMessages([
+                ...c.getMessages(),
+                { role: "user", content: `Q${i}` },
+                { role: "assistant", content: `A${i}` },
+            ]);
+        }
+        c.showTurnCapNotice(6);
+        const root = innerRoot(c);
+        const notice = root.querySelector(".notice");
+        expect(notice?.textContent).toContain("6");
+    });
+});
+
+describe("QACard abort rollback", () => {
+    it("rollbackUserTurn removes last user msg from messages and bubble", () => {
+        const c = new QACard();
+        const cb = makeCb();
+        c.mount(mkRect(10, 10, 100, 30), "src", cb);
+        const root = innerRoot(c);
+        const ta = root.querySelector<HTMLTextAreaElement>("textarea")!;
+        ta.value = "Q";
+        ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+        c.beginAssistant();
+
+        c.rollbackUserTurn();
+        expect(c.getMessages()).toEqual([]);
+        const userBubbles = root.querySelectorAll(".msg.user");
+        expect(userBubbles.length).toBe(0);
+        expect(ta.disabled).toBe(false);
+    });
+});

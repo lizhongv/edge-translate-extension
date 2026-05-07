@@ -14,6 +14,7 @@ type QACardCallbacks = {
 export class QACard {
     private host: HTMLDivElement | null = null;
     private root: ShadowRoot | null = null;
+    cardEl: HTMLElement | null = null;
     private messagesEl: HTMLElement | null = null;
     private textareaEl: HTMLTextAreaElement | null = null;
     private sendBtn: HTMLButtonElement | null = null;
@@ -106,6 +107,7 @@ export class QACard {
         this.textareaEl = ta;
         this.sendBtn = send;
 
+        this.cardEl = card;
         this.root.appendChild(card);
         document.body.appendChild(this.host);
 
@@ -191,6 +193,54 @@ export class QACard {
         return [...this.messages];
     }
 
+    setMessages(messages: ChatMessage[]): void {
+        this.messages = [...messages];
+        if (!this.messagesEl) return;
+        this.messagesEl.innerHTML = "";
+        for (const m of messages) {
+            const bubble = createMessageBubble(m.role, m.content);
+            if (m.role === "assistant") finalizeBubble(bubble, m.content);
+            this.messagesEl.appendChild(bubble);
+        }
+        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    }
+
+    showTurnCapNotice(maxTurns: number): void {
+        if (!this.cardEl) return;
+        let notice = this.cardEl.querySelector<HTMLElement>(".notice");
+        if (!notice) {
+            notice = document.createElement("div");
+            notice.className = "notice";
+            const inputRow = this.cardEl.querySelector(".input-row");
+            if (inputRow) this.cardEl.insertBefore(notice, inputRow);
+            else this.cardEl.appendChild(notice);
+        }
+        notice.textContent = `为控制费用，仅保留最近 ${maxTurns} 轮对话作为上下文`;
+    }
+
+    rollbackUserTurn(): void {
+        if (this.messages.length === 0) return;
+        const last = this.messages[this.messages.length - 1];
+        if (last.role !== "user") return;
+        this.messages = this.messages.slice(0, -1);
+        if (this.currentAssistantBubble?.parentElement) {
+            this.currentAssistantBubble.parentElement.removeChild(this.currentAssistantBubble);
+        }
+        this.currentAssistantBubble = null;
+        if (this.messagesEl) {
+            const userBubbles = this.messagesEl.querySelectorAll(".msg.user");
+            const lastUser = userBubbles[userBubbles.length - 1];
+            if (lastUser?.parentElement) lastUser.parentElement.removeChild(lastUser);
+        }
+        if (this.textareaEl) {
+            this.textareaEl.disabled = false;
+            this.textareaEl.value = last.content;
+            this.textareaEl.focus();
+        }
+        if (this.sendBtn) this.sendBtn.disabled = false;
+        this.streaming = false;
+    }
+
     isMounted(): boolean {
         return this.host !== null;
     }
@@ -201,6 +251,7 @@ export class QACard {
         if (this.host?.parentNode) this.host.parentNode.removeChild(this.host);
         this.host = null;
         this.root = null;
+        this.cardEl = null;
         this.messagesEl = null;
         this.textareaEl = null;
         this.sendBtn = null;

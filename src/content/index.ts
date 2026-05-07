@@ -31,6 +31,11 @@ function disconnectQA(): void {
 
 function sendQAMessages(messages: ChatMessage[]): void {
     if (!qaSession) return;
+    void getPublicSettings().then((s) => {
+        if (messages.length >= s.qaMaxTurns * 2) {
+            qaCard.showTurnCapNotice(s.qaMaxTurns);
+        }
+    });
     qaPartial = "";
     disconnectQA();
     qaCard.beginAssistant();
@@ -65,6 +70,10 @@ async function openQACard(text: string): Promise<void> {
     qaCard.mount(rect, text, {
         onSend: (messages: ChatMessage[]) => sendQAMessages(messages),
         onClose: () => {
+            if (qaPort) {
+                // streaming in progress → rollback the in-flight user turn
+                qaCard.rollbackUserTurn();
+            }
             disconnectQA();
             qaSession = null;
         },
