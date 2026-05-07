@@ -75,7 +75,7 @@ $<HTMLButtonElement>("testConn").addEventListener("click", async () => {
         const t0 = performance.now();
         const ctrl = new AbortController();
         let token = "";
-        for await (const t of stream("hi", "中文", settings, ctrl.signal)) {
+        for await (const t of stream({ kind: "translate", text: "hi", target: "中文" }, settings, ctrl.signal)) {
             token += t;
             if (token.length > 4) {
                 ctrl.abort();
