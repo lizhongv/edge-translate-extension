@@ -2,12 +2,12 @@
 
 # 翻译插件 · Edge Translate Extension
 
-**用左键划词，按一下「翻」字按钮，让 OpenAI 兼容大模型流式翻译瞬间出现在网页上。**
+**用左键划词调出工具栏，[翻] 一键翻译，[问] 多轮追问 —— 让 OpenAI 兼容大模型流式响应瞬间出现在网页上。**
 
-[![Version](https://img.shields.io/badge/version-v0.3.0-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
+[![Version](https://img.shields.io/badge/version-v0.4.0-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Tests](https://img.shields.io/badge/tests-81%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-120%20passing-brightgreen.svg)](#测试)
 [![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6.svg)](https://www.typescriptlang.org/)
 
 </div>
@@ -36,7 +36,8 @@
 
 | 特性 | 说明 |
 | --- | --- |
-| 🖱️ **三种触发方式** | 划词浮标点击 / 右键菜单 / `Alt+T` 快捷键，任选其一 |
+| 🖱️ **三种触发方式** | 划词工具栏（翻 / 问）/ 右键菜单 / `Alt+T` (翻译) `Alt+Q` (问答，可绑定) |
+| 💬 **划词问答** | 选中文本 → 点 [问] → 多轮对话；会话保存到侧边栏可重新打开继续追问 |
 | 🌊 **流式呈现** | 译文 token 级增量显示，长文也能秒看首字 |
 | 🤖 **OpenAI 兼容 API** | 支持 OpenAI、DeepSeek、Moonshot、Qwen、Ollama 等任意兼容端点 |
 | 🔄 **智能反向** | 中文输入自动翻为英文（由 prompt 完成，无需切换设置） |
@@ -48,6 +49,7 @@
 | 🌗 **深色模式** | 自动跟随系统主题 |
 | 🎨 **Shadow DOM 隔离** | 浮标和卡片样式不被宿主页面 CSS 污染 |
 | 📋 **双向复制** | 复制原文 / 复制译文按钮 |
+| 📑 **侧边栏 Tab** | 翻译历史 / 问答会话 双 Tab；问答 Session 可点入查看完整对话并继续 |
 
 ---
 
@@ -124,6 +126,16 @@ npm run build       # 产物输出到 dist/
 
 - 复制原文 / 复制译文 / 删除单条 / 清空全部
 
+### 划词问答
+
+1. 选中网页上的一段文字
+2. 点击工具栏中的 **[问]** 按钮（或右键 → 「问答选中内容」）
+3. 在弹出卡片中输入问题，按 `Enter` 发送（`Shift+Enter` 换行）
+4. AI 流式回答；可继续追问，对话上下文自动维护
+5. 关闭卡片后，会话保存到侧边栏「问答」Tab，可重新打开继续
+
+> 默认保留最近 6 轮对话作为上下文（可在设置中调整 `qaMaxTurns`）。
+
 ---
 
 ## 配置项详解
@@ -156,6 +168,12 @@ npm run build       # 产物输出到 dist/
 | **历史条数上限** | 本地保留多少条历史，超出后按时间淘汰 | `200` |
 | **启用划词浮标** | 划词后是否在选区右下角显示一键翻译按钮 | `true` |
 | 快捷键（仅展示） | 全局快捷键，实际修改入口在 `edge://extensions/shortcuts` | `Alt+T` |
+
+### 问答（QA）
+
+- **启用问答按钮** (`enableQA`)：默认开启。关闭后工具栏只显示 [翻]。
+- **问答系统提示词** (`qaSystemPrompt`)：默认提示模型基于选中文本回答问题，输出纯文本，与用户语种一致。可改为更专业的提示，例如「请用代码示例解释」「请按学术论文风格回答」。
+- **多轮上限** (`qaMaxTurns`)：默认 6（即最近 6 轮 = 12 条消息）。超出后自动丢弃最早一对。范围 1-20。
 
 ### 兼容端点示例
 
@@ -196,7 +214,7 @@ npm run build       # 产物输出到 dist/
 | `npm install` | 安装依赖 |
 | `npm run dev` | Vite + CRXJS 开发模式，启用 HMR；产物写入 `dist/`，加载该目录到浏览器即可热更新 |
 | `npm run build` | 生产构建，输出到 `dist/` |
-| `npm run test` | Vitest 单元测试（共 81 条） |
+| `npm run test` | Vitest 单元测试（共 120 条） |
 | `npm run test:watch` | Vitest 监视模式 |
 | `npm run test:coverage` | 测试 + 覆盖率报告 |
 | `npm run typecheck` | `tsc --noEmit`，仅做类型检查 |
@@ -278,7 +296,7 @@ edge-translate-extension/
 ## 测试
 
 ```bash
-npm run test              # 81 个单元测试
+npm run test              # 120 个单元测试
 npm run test:coverage     # 含覆盖率报告
 ```
 
@@ -291,6 +309,8 @@ npm run test:coverage     # 含覆盖率报告
 - `background/translator.ts` — 翻译编排（4 用例）
 - `content/selection.ts` — 选区辅助（3 用例）
 - `content/hover-button.ts` — 浮标 + isInEditable（17 用例）
+- `content/toolbar.ts` — 划词工具栏（翻 / 问 按钮）（新增）
+- `background/qa-session.ts` — 问答会话编排（新增）
 
 UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
@@ -300,6 +320,7 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
 | 版本 | 主要内容 |
 | --- | --- |
+| [`v0.4.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.4.0) | 划词浮标升级为工具栏 [翻][问]；新增划词问答（多轮对话 + 会话持久化）；侧边栏新增「问答」Tab；设置新增 enableQA / qaSystemPrompt / qaMaxTurns；右键菜单新增「问答选中内容」；120 个单元测试 |
 | [`v0.3.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.3.0) | 划词浮标触发器（蓝底白「翻」字）；浮动卡片 + 侧边栏双向复制（原文 / 译文） |
 | [`v0.2.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.2.0) | 右键菜单 + Alt+T 全链路稳定；DeepSeek 默认；选项页对比度优化；Windows 构建容错 |
 | [`v0.1.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.1.0) | 初始 MVP：右键菜单 + 流式翻译 + 历史 + 选项页 |
@@ -310,9 +331,10 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
 ## 路线图
 
+- ✅ **v0.4.0 划词问答**（已完成）
+- ⏳ **v0.5.0 划词总结**（计划中）
 - [ ] PDF.js 阅读器内选区翻译
 - [ ] 整页翻译（双语对照）
-- [ ] 对话式追问（基于侧边栏，复用上下文）
 - [ ] 长文自动分段并行翻译
 - [ ] 多套 LLM 配置切换（一键在 OpenAI / DeepSeek 等之间切换）
 - [ ] 自定义术语表 / 翻译记忆
