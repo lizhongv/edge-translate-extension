@@ -1,6 +1,7 @@
 import { translate } from "./translator";
+import { answerQA } from "./qa";
 import {
-    rtShowCard, rtRequestTranslate, rtHistoryUpdated,
+    rtShowCard, rtRequestTranslate, rtHistoryUpdated, rtQASessionUpdated,
     isTaskMsg, isRuntimeMessage,
 } from "../shared/messages";
 
@@ -113,8 +114,10 @@ chrome.runtime.onConnect.addListener((port) => {
         if (p.task === "translate") {
             await translate(p.text, port, ctrl.signal, undefined, pageOrigin);
             chrome.runtime.sendMessage(rtHistoryUpdated()).catch(() => {/* no listener ok */});
+        } else if (p.task === "qa") {
+            await answerQA(p.sessionId, p.sourceText, p.messages, port, ctrl.signal, pageOrigin);
+            chrome.runtime.sendMessage(rtQASessionUpdated(p.sessionId)).catch(() => {/* no listener ok */});
         }
-        // qa branch added in Task 17
     });
 
     port.onDisconnect.addListener(() => {
