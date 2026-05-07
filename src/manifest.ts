@@ -38,6 +38,9 @@ export default defineManifest({
             suggested_key: { default: "Alt+T" },
             description: "翻译当前选中文本",
         },
+        qa: {
+            description: "问答当前选中文本（在 edge://extensions/shortcuts 设置快捷键）",
+        },
     },
     icons: {
         16: "icons/16.png",

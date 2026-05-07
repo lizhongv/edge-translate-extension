@@ -88,14 +88,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.commands.onCommand.addListener((command) => {
-    if (command !== "translate") return;
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs[0];
         if (!tab?.id || isRestrictedUrl(tab.url)) {
             notifyRestricted();
             return;
         }
-        void dispatchToTab(tab.id, rtRequestTranslate());
+        if (command === "translate") {
+            void dispatchToTab(tab.id, rtRequestTranslate());
+        } else if (command === "qa") {
+            void dispatchToTab(tab.id, rtOpenQA());
+        }
     });
 });
 
