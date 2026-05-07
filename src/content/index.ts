@@ -226,5 +226,8 @@ chrome.runtime.onMessage.addListener((msg: RuntimeMessage | { type: string }) =>
         void handleTrigger(m.text);
     } else if (m.type === "requestTranslate") {
         void handleTrigger();
+    } else if (m.type === "openQA") {
+        const text = (m.text || getSelectionText()).trim();
+        if (text) void openQACard(text);
     }
 });

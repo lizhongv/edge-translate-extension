@@ -1,11 +1,12 @@
 import { translate } from "./translator";
 import { answerQA } from "./qa";
 import {
-    rtShowCard, rtRequestTranslate, rtHistoryUpdated, rtQASessionUpdated,
-    isTaskMsg, isRuntimeMessage,
+    rtShowCard, rtRequestTranslate, rtHistoryUpdated, rtOpenQA,
+    rtQASessionUpdated, isTaskMsg, isRuntimeMessage,
 } from "../shared/messages";
 
 const MENU_ID = "fayichajian-translate-selection";
+const MENU_QA_ID = "fayichajian-qa-selection";
 
 const isRestrictedUrl = (url: string | undefined): boolean => {
     if (!url) return true;
@@ -31,6 +32,14 @@ function registerContextMenu(): void {
             const err = chrome.runtime.lastError;
             if (err) console.error("[翻译插件] 注册右键菜单失败:", err.message);
             else console.log("[翻译插件] 右键菜单已注册");
+        });
+        chrome.contextMenus.create({
+            id: MENU_QA_ID,
+            title: "问答选中内容",
+            contexts: ["selection"],
+        }, () => {
+            const err = chrome.runtime.lastError;
+            if (err) console.error("[翻译插件] 注册问答菜单失败:", err.message);
         });
     });
 }
@@ -67,13 +76,15 @@ async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId !== MENU_ID) return;
-    console.log("[翻译插件] 右键点击，selectionText=", info.selectionText?.slice(0, 50));
     if (!tab?.id || isRestrictedUrl(tab.url)) {
         notifyRestricted();
         return;
     }
-    void dispatchToTab(tab.id, rtShowCard(info.selectionText));
+    if (info.menuItemId === MENU_ID) {
+        void dispatchToTab(tab.id, rtShowCard(info.selectionText));
+    } else if (info.menuItemId === MENU_QA_ID) {
+        void dispatchToTab(tab.id, rtOpenQA(info.selectionText));
+    }
 });
 
 chrome.commands.onCommand.addListener((command) => {
