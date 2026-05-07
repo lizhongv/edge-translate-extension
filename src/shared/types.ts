@@ -56,6 +56,8 @@ export type RuntimeMessage =
     | { type: "showCard"; text?: string }
     | { type: "requestTranslate" }
     | { type: "historyUpdated" }
+    | { type: "qaSessionUpdated"; sessionId: string }
+    | { type: "openQA"; text?: string }
     | { type: "openOptions" };
 
 export type CacheEntry = {
