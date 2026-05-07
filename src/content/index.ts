@@ -1,15 +1,82 @@
 import { FloatingCard } from "./floating-card";
 import { Toolbar } from "./toolbar";
+import { QACard } from "./qa-card";
 import { isInEditable } from "./dom-utils";
 import { getSelectionRect, getSelectionText } from "./selection";
 import { getPublicSettings } from "../shared/storage";
-import { msgTaskTranslate, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
-import type { LLMError, RuntimeMessage } from "../shared/types";
+import { msgTaskTranslate, msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
+import type { ChatMessage, LLMError, QASession, RuntimeMessage } from "../shared/types";
 
 console.log("[翻译插件] content script 已加载:", location.href);
 
 const card = new FloatingCard();
 const toolbar = new Toolbar();
+const qaCard = new QACard();
+let qaSession: QASession | null = null;
+let qaPort: chrome.runtime.Port | null = null;
+let qaPartial = "";
+
+const uuid = (): string =>
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+
+function disconnectQA(): void {
+    if (qaPort) {
+        try { qaPort.disconnect(); } catch {/* ignore */}
+        qaPort = null;
+    }
+}
+
+function sendQAMessages(messages: ChatMessage[]): void {
+    if (!qaSession) return;
+    qaPartial = "";
+    disconnectQA();
+    qaCard.beginAssistant();
+    const port = chrome.runtime.connect({ name: "task" });
+    qaPort = port;
+    port.onMessage.addListener((msg: unknown) => {
+        if (isTokenMsg(msg)) {
+            qaPartial += msg.chunk;
+            qaCard.appendToken(msg.chunk);
+        } else if (isDoneMsg(msg)) {
+            qaCard.endAssistant(msg.full);
+        } else if (isErrorMsg(msg)) {
+            qaCard.failAssistant(msg.error as LLMError, qaPartial);
+        }
+    });
+    port.onDisconnect.addListener(() => { qaPort = null; });
+    port.postMessage(msgTaskQA(qaSession.id, qaSession.sourceText, messages));
+}
+
+async function openQACard(text: string): Promise<void> {
+    if (!text) return;
+    toolbar.hide();
+    const rect = getSelectionRect();
+    qaSession = {
+        id: uuid(),
+        sourceText: text,
+        model: "",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: [],
+    };
+    qaCard.mount(rect, text, {
+        onSend: (messages: ChatMessage[]) => sendQAMessages(messages),
+        onClose: () => {
+            disconnectQA();
+            qaSession = null;
+        },
+        onOpenOptions: () => {
+            chrome.runtime.sendMessage(rtOpenOptions()).catch(() => {/* ignore */});
+        },
+        onRetry: () => {
+            if (!qaSession) return;
+            sendQAMessages(qaCard.getMessages());
+        },
+    });
+}
 
 const TOOLBAR_ACTIONS = [
     { id: "translate", char: "翻", label: "翻译" },
@@ -115,8 +182,7 @@ async function maybeShowToolbar(): Promise<void> {
         if (id === "translate") {
             void handleTrigger(text);
         } else if (id === "qa") {
-            // wired in Task 18
-            console.log("[翻译插件] QA 入口（暂未实现）", text);
+            void openQACard(text);
         }
     });
 }
