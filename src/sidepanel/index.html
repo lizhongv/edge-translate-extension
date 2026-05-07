@@ -8,10 +8,22 @@
 </head>
 <body>
     <header>
-        <h1>翻译历史</h1>
-        <button id="clear">清空</button>
+        <div class="tabs">
+            <button class="tab active" data-tab="translate">翻译</button>
+            <button class="tab" data-tab="qa">问答</button>
+        </div>
+        <div class="tools">
+            <button id="back" class="back" hidden>← 返回</button>
+            <button id="clear">清空</button>
+        </div>
     </header>
-    <main id="list"></main>
+
+    <main>
+        <section id="list-translate" class="view active"></section>
+        <section id="list-qa" class="view"></section>
+        <section id="detail-qa" class="view detail"></section>
+    </main>
+
     <template id="item-tpl">
         <article class="item">
             <div class="meta">
@@ -27,6 +39,34 @@
             </div>
         </article>
     </template>
+
+    <template id="qa-item-tpl">
+        <article class="item qa-item">
+            <div class="meta">
+                <span class="time"></span>
+                <span class="model"></span>
+                <span class="turns"></span>
+                <button class="del" title="删除">×</button>
+            </div>
+            <div class="src"></div>
+            <div class="first-q"></div>
+        </article>
+    </template>
+
+    <template id="qa-detail-tpl">
+        <div class="qa-detail">
+            <div class="source-row">
+                <div class="label">原文</div>
+                <div class="source-text"></div>
+            </div>
+            <div class="messages"></div>
+            <div class="input-row">
+                <textarea class="input" placeholder="继续追问…" rows="2"></textarea>
+                <button class="send">↑</button>
+            </div>
+        </div>
+    </template>
+
     <script type="module" src="./index.ts"></script>
 </body>
 </html>
