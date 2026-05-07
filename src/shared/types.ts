@@ -42,8 +42,12 @@ export type LLMError = {
     httpStatus?: number;
 };
 
+export type TaskRequest =
+    | { task: "translate"; text: string }
+    | { task: "qa"; sessionId: string; sourceText: string; messages: ChatMessage[] };
+
 export type PortMessage =
-    | { type: "translate"; text: string }
+    | { type: "task"; payload: TaskRequest }
     | { type: "token"; chunk: string }
     | { type: "done"; full: string }
     | { type: "error"; error: LLMError };
