@@ -144,3 +144,80 @@ export async function deleteQASession(id: string): Promise<void> {
 export async function clearQASessions(): Promise<void> {
     await chrome.storage.local.set({ [QA_SESSIONS_KEY]: [] });
 }
+
+const MEMOS_KEY = "memos";
+
+const memoUuid = (): string =>
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+
+const MEMO_TITLE_MAX_LEN = 30;
+
+const autoTitle = (content: string): string =>
+    content.replace(/\n/g, " ").trim().slice(0, MEMO_TITLE_MAX_LEN);
+
+export async function getMemos(): Promise<import("./types").Memo[]> {
+    const r = await chrome.storage.local.get(MEMOS_KEY);
+    const list = (r[MEMOS_KEY] as import("./types").Memo[]) ?? [];
+    return [...list].sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+export async function addMemo(
+    input: Omit<import("./types").Memo, "id" | "createdAt" | "updatedAt">
+): Promise<import("./types").Memo> {
+    const settings = await getSettings();
+    const r = await chrome.storage.local.get(MEMOS_KEY);
+    const existing = (r[MEMOS_KEY] as import("./types").Memo[]) ?? [];
+    const now = Date.now();
+    const memo: import("./types").Memo = {
+        ...input,
+        id: memoUuid(),
+        title: input.title?.trim() || autoTitle(input.content),
+        createdAt: now,
+        updatedAt: now,
+    };
+    const next = [memo, ...existing]
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, settings.historyLimit);
+    await chrome.storage.local.set({ [MEMOS_KEY]: next });
+    return memo;
+}
+
+export async function updateMemo(
+    id: string,
+    patch: Partial<Pick<import("./types").Memo, "title" | "content">>
+): Promise<void> {
+    const r = await chrome.storage.local.get(MEMOS_KEY);
+    const list = (r[MEMOS_KEY] as import("./types").Memo[]) ?? [];
+    const idx = list.findIndex(m => m.id === id);
+    if (idx === -1) return;
+    const cur = list[idx];
+    const nextContent = patch.content !== undefined ? patch.content : cur.content;
+    const explicitTitle = patch.title !== undefined ? patch.title.trim() : undefined;
+    const nextTitle = explicitTitle && explicitTitle.length > 0
+        ? explicitTitle
+        : (patch.title !== undefined ? autoTitle(nextContent) : cur.title);
+    const updated: import("./types").Memo = {
+        ...cur,
+        title: nextTitle,
+        content: nextContent,
+        updatedAt: Date.now(),
+    };
+    const next = [...list.slice(0, idx), updated, ...list.slice(idx + 1)]
+        .sort((a, b) => b.updatedAt - a.updatedAt);
+    await chrome.storage.local.set({ [MEMOS_KEY]: next });
+}
+
+export async function deleteMemo(id: string): Promise<void> {
+    const r = await chrome.storage.local.get(MEMOS_KEY);
+    const list = (r[MEMOS_KEY] as import("./types").Memo[]) ?? [];
+    await chrome.storage.local.set({
+        [MEMOS_KEY]: list.filter(m => m.id !== id),
+    });
+}
+
+export async function clearMemos(): Promise<void> {
+    await chrome.storage.local.set({ [MEMOS_KEY]: [] });
+}

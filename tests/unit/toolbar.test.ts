@@ -16,6 +16,8 @@ const mkRect = (left: number, top: number, right: number, bottom: number): DOMRe
 const mkActions = () => [
     { id: "translate", char: "翻", label: "翻译" },
     { id: "qa", char: "问", label: "问答" },
+    { id: "memo", char: "存", label: "保存到备忘录" },
+    { id: "settings", char: "设", label: "打开设置" },
 ];
 
 describe("Toolbar.show / hide", () => {
@@ -28,7 +30,7 @@ describe("Toolbar.show / hide", () => {
         const t = new Toolbar();
         t.show(mkRect(10, 10, 100, 30), mkActions(), () => {});
         const root = (t as any).root as ShadowRoot;
-        expect(root.querySelectorAll(".btn").length).toBe(2);
+        expect(root.querySelectorAll(".btn").length).toBe(4);
         expect(t.isShown()).toBe(true);
     });
 
@@ -87,7 +89,7 @@ describe("Toolbar position", () => {
         t.show(mkRect(100, 100, 200, 130), mkActions(), () => {});
         const root = (t as any).root as ShadowRoot;
         const bar = root.querySelector<HTMLElement>(".bar")!;
-        const expectedWidth = 28 * 2;
+        const expectedWidth = 28 * 4;
         expect(bar.style.left).toBe(`${200 - expectedWidth}px`);
         expect(bar.style.top).toBe(`${130 + 4}px`);
     });
@@ -98,7 +100,7 @@ describe("Toolbar position", () => {
         const root = (t as any).root as ShadowRoot;
         const bar = root.querySelector<HTMLElement>(".bar")!;
         const left = parseInt(bar.style.left, 10);
-        expect(left + 28 * 2).toBeLessThanOrEqual(winW - 4);
+        expect(left + 28 * 4).toBeLessThanOrEqual(winW - 4);
     });
 
     it("bottom-edge overflow → place above selection", () => {

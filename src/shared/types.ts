@@ -14,6 +14,8 @@ export type Settings = {
     enableQA: boolean;
     qaSystemPrompt: string;
     qaMaxTurns: number;
+    enableMemo: boolean;
+    enableSettingsButton: boolean;
 };
 
 export type HistoryItem = {
@@ -58,7 +60,10 @@ export type RuntimeMessage =
     | { type: "historyUpdated" }
     | { type: "qaSessionUpdated"; sessionId: string }
     | { type: "openQA"; text?: string }
-    | { type: "openOptions" };
+    | { type: "openOptions" }
+    | { type: "saveMemo"; text: string; pageUrl?: string; pageTitle?: string }
+    | { type: "memoUpdated" }
+    | { type: "openSidepanel"; tab?: "translate" | "qa" | "memo" };
 
 export type CacheEntry = {
     key: string;
@@ -79,6 +84,20 @@ export type QASession = {
     createdAt: number;
     updatedAt: number;
     messages: ChatMessage[];
+};
+
+export type MemoSource = "selection" | "qa";
+
+export type Memo = {
+    id: string;
+    title: string;
+    content: string;
+    source: MemoSource;
+    sourceContext?: string;
+    pageUrl?: string;
+    pageTitle?: string;
+    createdAt: number;
+    updatedAt: number;
 };
 
 export const DEFAULT_SYSTEM_PROMPT =
@@ -109,4 +128,6 @@ export const DEFAULT_SETTINGS: Settings = {
     enableQA: true,
     qaSystemPrompt: DEFAULT_QA_SYSTEM_PROMPT,
     qaMaxTurns: 6,
+    enableMemo: true,
+    enableSettingsButton: true,
 };

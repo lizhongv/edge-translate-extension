@@ -174,6 +174,24 @@ describe("QACard streaming lifecycle", () => {
         expect(lastBubble[lastBubble.length - 1].querySelector(".copy")).toBeTruthy();
     });
 
+    it("endAssistant renders 复制原文 + 复制答案 + 保存到备忘录", () => {
+        const c = new QACard();
+        const cb = makeCb();
+        c.mount(mkRect(10, 10, 100, 30), "the-source", cb);
+        const root = innerRoot(c);
+        const ta = root.querySelector<HTMLTextAreaElement>("textarea")!;
+        ta.value = "Q";
+        ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+        c.beginAssistant();
+        c.endAssistant("Answer");
+        const lastBubble = Array.from(root.querySelectorAll(".msg.assistant")).pop()!;
+        const btns = Array.from(lastBubble.querySelectorAll<HTMLButtonElement>("button"));
+        const labels = btns.map(b => b.textContent);
+        expect(labels).toContain("复制答案");
+        expect(labels).toContain("复制原文");
+        expect(labels).toContain("保存到备忘录");
+    });
+
     it("failAssistant marks bubble error and re-enables textarea", () => {
         const c = new QACard();
         const cb = makeCb();

@@ -19,6 +19,8 @@ const inputs = {
     enableQA: $<HTMLInputElement>("enableQA"),
     qaSystemPrompt: $<HTMLTextAreaElement>("qaSystemPrompt"),
     qaMaxTurns: $<HTMLInputElement>("qaMaxTurns"),
+    enableMemo: $<HTMLInputElement>("enableMemo"),
+    enableSettingsButton: $<HTMLInputElement>("enableSettingsButton"),
 };
 
 function fillForm(s: Settings): void {
@@ -36,6 +38,8 @@ function fillForm(s: Settings): void {
     inputs.enableQA.checked = s.enableQA;
     inputs.qaSystemPrompt.value = s.qaSystemPrompt;
     inputs.qaMaxTurns.value = String(s.qaMaxTurns);
+    inputs.enableMemo.checked = s.enableMemo;
+    inputs.enableSettingsButton.checked = s.enableSettingsButton;
 }
 
 function readForm(): Partial<Settings> {
@@ -61,6 +65,8 @@ function readForm(): Partial<Settings> {
         enableQA: inputs.enableQA.checked,
         qaSystemPrompt: inputs.qaSystemPrompt.value,
         qaMaxTurns: Math.min(20, Math.max(1, Number(inputs.qaMaxTurns.value) || 6)),
+        enableMemo: inputs.enableMemo.checked,
+        enableSettingsButton: inputs.enableSettingsButton.checked,
     };
 }
 
@@ -100,9 +106,6 @@ $<HTMLButtonElement>("testConn").addEventListener("click", async () => {
 });
 
 void (async () => {
-    console.time("[翻译插件] options getSettings");
     const s = await getSettings();
-    console.timeEnd("[翻译插件] options getSettings");
     fillForm(s);
-    console.log("[翻译插件] options 表单已填充");
 })();

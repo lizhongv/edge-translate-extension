@@ -1,0 +1,46 @@
+:host {
+    all: initial;
+    color-scheme: light dark;
+}
+.toast {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 2147483647;
+    background: rgba(30, 41, 59, 0.95);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.18s, transform 0.18s;
+    pointer-events: auto;
+}
+.toast.shown {
+    opacity: 1;
+    transform: translateY(0);
+}
+.toast .msg { white-space: pre; }
+.toast .action {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: inherit;
+    font: inherit;
+    border-radius: 6px;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+.toast .action:hover { border-color: #fff; }
+@media (prefers-color-scheme: light) {
+    .toast {
+        background: rgba(30, 41, 59, 0.92);
+        color: #fff;
+    }
+}

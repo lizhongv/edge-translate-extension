@@ -3,6 +3,9 @@ import type { ChatMessage, LLMError } from "../shared/types";
 import {
     createMessageBubble, appendTokenToBubble, finalizeBubble, setBubbleError,
 } from "../shared/qa-render";
+import { addMemo } from "../shared/storage";
+import { showToast } from "../shared/toast";
+import { rtMemoUpdated, rtOpenSidepanel } from "../shared/messages";
 
 type QACardCallbacks = {
     onSend: (messages: ChatMessage[]) => void;
@@ -13,6 +16,7 @@ type QACardCallbacks = {
 
 export class QACard {
     private host: HTMLDivElement | null = null;
+    private sourceText = "";
     private root: ShadowRoot | null = null;
     cardEl: HTMLElement | null = null;
     private messagesEl: HTMLElement | null = null;
@@ -31,6 +35,7 @@ export class QACard {
         }
         this.cb = callbacks;
         this.messages = [];
+        this.sourceText = sourceText;
 
         this.host = document.createElement("div");
         this.host.style.all = "initial";
@@ -161,7 +166,14 @@ export class QACard {
         if (this.currentAssistantBubble) {
             const sp = this.currentAssistantBubble.querySelector(".spinner");
             if (sp) sp.remove();
-            finalizeBubble(this.currentAssistantBubble, full);
+            const sourceText = this.sourceText;
+            finalizeBubble(this.currentAssistantBubble, full, {
+                sourceText,
+                extraActions: [{
+                    label: "保存到备忘录",
+                    onClick: () => { void saveQAAnswerToMemo(full, sourceText); },
+                }],
+            });
         }
         this.messages = [...this.messages, { role: "assistant", content: full }];
         this.currentAssistantBubble = null;
@@ -288,6 +300,7 @@ export class QACard {
         this.messages = [];
         this.streaming = false;
         this.currentAssistantBubble = null;
+        this.sourceText = "";
     }
 
     private computePosition(rect: DOMRect | null): { x: number; y: number } {
@@ -319,4 +332,27 @@ export class QACard {
             this.unmount();
         }
     };
+}
+
+async function saveQAAnswerToMemo(answer: string, sourceContext: string): Promise<void> {
+    try {
+        await addMemo({
+            title: "",
+            content: answer,
+            source: "qa",
+            sourceContext,
+            pageUrl: location.href,
+            pageTitle: document.title,
+        });
+        chrome.runtime.sendMessage(rtMemoUpdated()).catch(() => {/* ignore */});
+        showToast("已保存 ✓", {
+            actionLabel: "打开",
+            onAction: () => {
+                chrome.runtime.sendMessage(rtOpenSidepanel("memo")).catch(() => {/* ignore */});
+            },
+        });
+    } catch (e) {
+        console.error("[翻译插件] saveQAAnswerToMemo failed:", e);
+        showToast("保存失败：存储空间不足");
+    }
 }
