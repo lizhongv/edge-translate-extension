@@ -21,6 +21,7 @@ const inputs = {
     qaMaxTurns: $<HTMLInputElement>("qaMaxTurns"),
     enableMemo: $<HTMLInputElement>("enableMemo"),
     enableSettingsButton: $<HTMLInputElement>("enableSettingsButton"),
+    forceSelectable: $<HTMLInputElement>("forceSelectable"),
 };
 
 function fillForm(s: Settings): void {
@@ -40,6 +41,7 @@ function fillForm(s: Settings): void {
     inputs.qaMaxTurns.value = String(s.qaMaxTurns);
     inputs.enableMemo.checked = s.enableMemo;
     inputs.enableSettingsButton.checked = s.enableSettingsButton;
+    inputs.forceSelectable.checked = s.forceSelectable;
 }
 
 function readForm(): Partial<Settings> {
@@ -67,6 +69,7 @@ function readForm(): Partial<Settings> {
         qaMaxTurns: Math.min(20, Math.max(1, Number(inputs.qaMaxTurns.value) || 6)),
         enableMemo: inputs.enableMemo.checked,
         enableSettingsButton: inputs.enableSettingsButton.checked,
+        forceSelectable: inputs.forceSelectable.checked,
     };
 }
 
