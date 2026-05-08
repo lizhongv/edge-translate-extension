@@ -287,3 +287,19 @@ main { padding: 8px 12px; }
     border-color: #2563eb;
 }
 .memo-buttons .memo-save:hover { background: #1d4ed8; border-color: #1d4ed8; }
+
+.memo-export {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    padding: 3px 10px;
+    cursor: pointer;
+    opacity: 0.85;
+}
+.memo-export:hover { opacity: 1; }
+.memo-export:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

@@ -115,7 +115,7 @@ async function saveSelectionAsMemo(
             },
         });
     } catch (e) {
-        console.error("[翻译插件] saveSelectionAsMemo failed:", e);
+        console.error("[工具插件] saveSelectionAsMemo failed:", e);
         showToast("保存失败：存储空间不足，请清理旧条目");
     }
 }
@@ -154,9 +154,9 @@ function startTranslation(text: string): void {
 async function handleTrigger(fallbackText?: string): Promise<void> {
     const live = getSelectionText();
     const text = live || fallbackText || "";
-    console.log("[翻译插件] 触发翻译, DOM 选区:", live.slice(0, 30), "回退:", fallbackText?.slice(0, 30));
+    console.log("[工具插件] 触发翻译, DOM 选区:", live.slice(0, 30), "回退:", fallbackText?.slice(0, 30));
     if (!text) {
-        console.warn("[翻译插件] 没有可翻译的文本（选区已丢失且菜单未带文本）");
+        console.warn("[工具插件] 没有可翻译的文本（选区已丢失且菜单未带文本）");
         return;
     }
     toolbar.hide();
