@@ -4,6 +4,7 @@ import {
     isTaskMsg, isTokenMsg, isDoneMsg, isErrorMsg,
     rtShowCard, rtRequestTranslate, rtHistoryUpdated, rtOpenOptions,
     rtQASessionUpdated, rtOpenQA,
+    rtSaveMemo, rtMemoUpdated, rtOpenSidepanel,
     isRuntimeMessage,
 } from "../../src/shared/messages";
 
@@ -70,6 +71,13 @@ describe("runtime message constructors", () => {
         expect(rtQASessionUpdated("sid-1")).toEqual({ type: "qaSessionUpdated", sessionId: "sid-1" });
         expect(rtOpenQA()).toEqual({ type: "openQA" });
         expect(rtOpenQA("text")).toEqual({ type: "openQA", text: "text" });
+        expect(rtSaveMemo("hi")).toEqual({ type: "saveMemo", text: "hi" });
+        expect(rtSaveMemo("hi", "https://x", "Title")).toEqual({
+            type: "saveMemo", text: "hi", pageUrl: "https://x", pageTitle: "Title",
+        });
+        expect(rtMemoUpdated()).toEqual({ type: "memoUpdated" });
+        expect(rtOpenSidepanel()).toEqual({ type: "openSidepanel" });
+        expect(rtOpenSidepanel("memo")).toEqual({ type: "openSidepanel", tab: "memo" });
     });
     it("isRuntimeMessage accepts all known types", () => {
         expect(isRuntimeMessage({ type: "showCard" })).toBe(true);
@@ -77,5 +85,8 @@ describe("runtime message constructors", () => {
         expect(isRuntimeMessage({ type: "openQA" })).toBe(true);
         expect(isRuntimeMessage({ type: "unknown" })).toBe(false);
         expect(isRuntimeMessage(null)).toBe(false);
+        expect(isRuntimeMessage({ type: "saveMemo", text: "x" })).toBe(true);
+        expect(isRuntimeMessage({ type: "memoUpdated" })).toBe(true);
+        expect(isRuntimeMessage({ type: "openSidepanel" })).toBe(true);
     });
 });

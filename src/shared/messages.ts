@@ -57,9 +57,28 @@ export const rtQASessionUpdated = (sessionId: string): RuntimeMessage => ({
 export const rtOpenQA = (text?: string): RuntimeMessage =>
     text !== undefined ? { type: "openQA", text } : { type: "openQA" };
 
+export const rtSaveMemo = (
+    text: string,
+    pageUrl?: string,
+    pageTitle?: string
+): RuntimeMessage => ({
+    type: "saveMemo",
+    text,
+    ...(pageUrl !== undefined ? { pageUrl } : {}),
+    ...(pageTitle !== undefined ? { pageTitle } : {}),
+});
+
+export const rtMemoUpdated = (): RuntimeMessage => ({ type: "memoUpdated" });
+
+export const rtOpenSidepanel = (
+    tab?: "translate" | "qa" | "memo"
+): RuntimeMessage =>
+    tab !== undefined ? { type: "openSidepanel", tab } : { type: "openSidepanel" };
+
 const KNOWN_RT_TYPES = [
     "showCard", "requestTranslate", "historyUpdated",
     "qaSessionUpdated", "openQA", "openOptions",
+    "saveMemo", "memoUpdated", "openSidepanel",
 ] as const;
 
 export const isRuntimeMessage = (v: unknown): v is RuntimeMessage =>
