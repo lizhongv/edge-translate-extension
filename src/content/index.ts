@@ -90,7 +90,14 @@ async function openQACard(text: string): Promise<void> {
 const TOOLBAR_ACTIONS = [
     { id: "translate", char: "翻", label: "翻译" },
     { id: "qa", char: "问", label: "问答" },
+    { id: "memo", char: "存", label: "保存到备忘录" },
+    { id: "settings", char: "设", label: "打开设置" },
 ];
+
+async function saveSelectionAsMemo(_text: string, _pageUrl?: string, _pageTitle?: string): Promise<void> {
+    // implemented in Task 7
+    console.warn("[翻译插件] saveSelectionAsMemo stub");
+}
 let currentPort: chrome.runtime.Port | null = null;
 let lastText = "";
 let partial = "";
@@ -186,12 +193,21 @@ async function maybeShowToolbar(): Promise<void> {
         toolbar.hide();
         return;
     }
-    const actions = TOOLBAR_ACTIONS.filter(a => a.id !== "qa" || settings.enableQA);
+    const actions = TOOLBAR_ACTIONS.filter(a => {
+        if (a.id === "qa") return settings.enableQA;
+        if (a.id === "memo") return settings.enableMemo;
+        if (a.id === "settings") return settings.enableSettingsButton;
+        return true;
+    });
     toolbar.show(rect, actions, (id) => {
         if (id === "translate") {
             void handleTrigger(text);
         } else if (id === "qa") {
             void openQACard(text);
+        } else if (id === "memo") {
+            void saveSelectionAsMemo(text);
+        } else if (id === "settings") {
+            chrome.runtime.sendMessage(rtOpenOptions()).catch(() => {/* ignore */});
         }
     });
 }
