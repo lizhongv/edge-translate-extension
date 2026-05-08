@@ -11,9 +11,11 @@
         <div class="tabs">
             <button class="tab active" data-tab="translate">翻译</button>
             <button class="tab" data-tab="qa">问答</button>
+            <button class="tab" data-tab="memo">备忘录</button>
         </div>
         <div class="tools">
             <button id="back" class="back" hidden>← 返回</button>
+            <input id="memo-search" class="memo-search" type="search" placeholder="搜索备忘录..." hidden />
             <button id="clear">清空</button>
         </div>
     </header>
@@ -22,6 +24,8 @@
         <section id="list-translate" class="view active"></section>
         <section id="list-qa" class="view"></section>
         <section id="detail-qa" class="view detail"></section>
+        <section id="list-memo" class="view"></section>
+        <section id="detail-memo" class="view detail"></section>
     </main>
 
     <template id="item-tpl">
@@ -63,6 +67,39 @@
             <div class="input-row">
                 <textarea class="input" placeholder="继续追问…" rows="2"></textarea>
                 <button class="send">↑</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="memo-item-tpl">
+        <article class="item memo-item">
+            <div class="meta">
+                <span class="icon"></span>
+                <span class="time"></span>
+                <button class="del" title="删除">×</button>
+            </div>
+            <div class="title"></div>
+            <div class="preview"></div>
+            <div class="source"></div>
+        </article>
+    </template>
+
+    <template id="memo-detail-tpl">
+        <div class="memo-detail">
+            <label class="memo-title-label">标题
+                <input type="text" class="memo-title-input" maxlength="100" />
+            </label>
+            <div class="memo-source-row">
+                <span class="label">来源：</span>
+                <a class="memo-source-link" target="_blank" rel="noopener"></a>
+            </div>
+            <label class="memo-content-label">正文
+                <textarea class="memo-content-input" rows="14"></textarea>
+            </label>
+            <div class="memo-error" hidden></div>
+            <div class="memo-buttons">
+                <button class="memo-cancel">取消</button>
+                <button class="memo-save">保存</button>
             </div>
         </div>
     </template>
