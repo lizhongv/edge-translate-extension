@@ -18,7 +18,7 @@ const notifyRestricted = (action: "翻译" | "问答" | "保存" = "翻译") => 
     chrome.notifications.create({
         type: "basic",
         iconUrl: chrome.runtime.getURL("icons/128.png"),
-        title: "翻译插件",
+        title: "工具插件",
         message: `无法在此页面${action}（受限页面）`,
     });
 };
@@ -31,8 +31,8 @@ function registerContextMenu(): void {
             contexts: ["selection"],
         }, () => {
             const err = chrome.runtime.lastError;
-            if (err) console.error("[翻译插件] 注册右键菜单失败:", err.message);
-            else console.log("[翻译插件] 右键菜单已注册");
+            if (err) console.error("[工具插件] 注册右键菜单失败:", err.message);
+            else console.log("[工具插件] 右键菜单已注册");
         });
         chrome.contextMenus.create({
             id: MENU_QA_ID,
@@ -40,7 +40,7 @@ function registerContextMenu(): void {
             contexts: ["selection"],
         }, () => {
             const err = chrome.runtime.lastError;
-            if (err) console.error("[翻译插件] 注册问答菜单失败:", err.message);
+            if (err) console.error("[工具插件] 注册问答菜单失败:", err.message);
         });
         chrome.contextMenus.create({
             id: MENU_MEMO_ID,
@@ -48,7 +48,7 @@ function registerContextMenu(): void {
             contexts: ["selection"],
         }, () => {
             const err = chrome.runtime.lastError;
-            if (err) console.error("[翻译插件] 注册备忘录菜单失败:", err.message);
+            if (err) console.error("[工具插件] 注册备忘录菜单失败:", err.message);
         });
     });
 }
@@ -67,7 +67,7 @@ async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
     try {
         await chrome.tabs.sendMessage(tabId, message);
     } catch (err) {
-        console.warn("[翻译插件] sendMessage 失败，尝试注入 content script:", err);
+        console.warn("[工具插件] sendMessage 失败，尝试注入 content script:", err);
         const files = getContentScriptFiles();
         if (files.length === 0) {
             notifyRestricted();
@@ -78,7 +78,7 @@ async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
             await new Promise((r) => setTimeout(r, 80));
             await chrome.tabs.sendMessage(tabId, message);
         } catch (e) {
-            console.error("[翻译插件] 注入并重发失败:", e);
+            console.error("[工具插件] 注入并重发失败:", e);
             notifyRestricted();
         }
     }
@@ -127,7 +127,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
             chrome.sidePanel.open({ windowId }).catch((e) => {
                 // Known limitation: if user gesture chain breaks, sidePanel.open
                 // throws and the user must click the extension icon manually.
-                console.warn("[翻译插件] sidePanel.open failed:", e);
+                console.warn("[工具插件] sidePanel.open failed:", e);
             });
         } else {
             chrome.windows.getLastFocused().then((w) => {
@@ -135,7 +135,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
                     chrome.sidePanel.open({ windowId: w.id }).catch((e) => {
                         // Known limitation: if user gesture chain breaks, sidePanel.open
                         // throws and the user must click the extension icon manually.
-                        console.warn("[翻译插件] sidePanel.open fallback failed:", e);
+                        console.warn("[工具插件] sidePanel.open fallback failed:", e);
                     });
                 }
             });

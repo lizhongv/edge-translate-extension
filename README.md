@@ -1,6 +1,6 @@
 <div align="center">
 
-# 翻译插件 · Edge Translate Extension
+# 工具插件 · Edge Toolkit Extension
 
 **用左键划词调出工具栏：[翻] 一键翻译，[问] 多轮追问，[存] 保存知识 —— 让 OpenAI 兼容大模型流式响应 + 个人沉淀同时落地。**
 

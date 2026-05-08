@@ -30,7 +30,7 @@ export class QACard {
     mount(rect: DOMRect | null, sourceText: string, callbacks: QACardCallbacks): void {
         this.unmount();
         if (!sourceText) {
-            console.warn("[翻译插件] QACard.mount called with empty sourceText");
+            console.warn("[工具插件] QACard.mount called with empty sourceText");
             return;
         }
         this.cb = callbacks;
@@ -352,7 +352,7 @@ async function saveQAAnswerToMemo(answer: string, sourceContext: string): Promis
             },
         });
     } catch (e) {
-        console.error("[翻译插件] saveQAAnswerToMemo failed:", e);
+        console.error("[工具插件] saveQAAnswerToMemo failed:", e);
         showToast("保存失败：存储空间不足");
     }
 }

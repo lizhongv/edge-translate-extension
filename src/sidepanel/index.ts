@@ -222,7 +222,7 @@ async function saveQAAnswerToMemoFromSidepanel(
         showToast("已保存 ✓");
         if (currentView === "memo") void refresh();
     } catch (e) {
-        console.error("[翻译插件] sidepanel save memo failed:", e);
+        console.error("[工具插件] sidepanel save memo failed:", e);
         showToast("保存失败");
     }
 }
@@ -387,7 +387,7 @@ async function renderMemoDetail(): Promise<void> {
             setView("memo");
             await refresh();
         } catch (e) {
-            console.error("[翻译插件] updateMemo failed:", e);
+            console.error("[工具插件] updateMemo failed:", e);
             showToast("保存失败");
         }
     });
