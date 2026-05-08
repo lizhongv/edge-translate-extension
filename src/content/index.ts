@@ -8,6 +8,26 @@ import { msgTaskTranslate, msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenO
 import { showToast } from "../shared/toast";
 import type { ChatMessage, LLMError, QASession, RuntimeMessage } from "../shared/types";
 
+function injectForceSelectableStyle(): void {
+    if (document.getElementById("fy-force-style")) return;
+    const style = document.createElement("style");
+    style.id = "fy-force-style";
+    style.textContent =
+        "html.fy-force-selectable, html.fy-force-selectable * {" +
+        " user-select: text !important;" +
+        " -webkit-user-select: text !important;" +
+        "}";
+    (document.head || document.documentElement).appendChild(style);
+}
+
+injectForceSelectableStyle();
+
+void getPublicSettings().then(s => {
+    if (s.forceSelectable) {
+        document.documentElement.classList.add("fy-force-selectable");
+    }
+});
+
 const card = new FloatingCard();
 const toolbar = new Toolbar();
 const qaCard = new QACard();
@@ -235,24 +255,24 @@ async function maybeShowToolbar(): Promise<void> {
 
 document.addEventListener("mouseup", () => {
     setTimeout(() => { void maybeShowToolbar(); }, 0);
-});
+}, { capture: true });
 
 document.addEventListener("selectionchange", () => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.toString().trim().length === 0) {
         toolbar.hide();
     }
-});
+}, { capture: true });
 
 document.addEventListener("mousedown", (e) => {
     if (!toolbar.isShown()) return;
     if (toolbar.contains(e.target)) return;
     toolbar.hide();
-}, true);
+}, { capture: true });
 
 window.addEventListener("scroll", () => {
     toolbar.hide();
-}, true);
+}, { capture: true });
 
 // ===== 现有 chrome.runtime 消息入口 =====
 
