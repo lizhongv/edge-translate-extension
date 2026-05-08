@@ -40,6 +40,10 @@
                 <input id="enableHoverButton" type="checkbox" />
                 启用划词浮标（选中文字后在选区右下角显示一键翻译按钮；输入框不出现）
             </label>
+            <label class="checkbox-label">
+                <input id="forceSelectable" type="checkbox" />
+                强制页面可选（覆盖站点的禁复制 CSS；遇到禁复制页面才打开。可能影响按钮拖动等交互。设置后需刷新页面生效）
+            </label>
             <p class="muted">
                 快捷键在 <code>edge://extensions/shortcuts</code> 处修改。
                 当前默认：<span id="shortcut">Alt+T</span>。

@@ -16,6 +16,7 @@ export type Settings = {
     qaMaxTurns: number;
     enableMemo: boolean;
     enableSettingsButton: boolean;
+    forceSelectable: boolean;
 };
 
 export type HistoryItem = {
@@ -130,4 +131,5 @@ export const DEFAULT_SETTINGS: Settings = {
     qaMaxTurns: 6,
     enableMemo: true,
     enableSettingsButton: true,
+    forceSelectable: false,
 };
