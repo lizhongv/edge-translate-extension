@@ -4,10 +4,10 @@
 
 **用左键划词调出工具栏：[翻] 一键翻译，[问] 多轮追问，[存] 保存知识 —— 让 OpenAI 兼容大模型流式响应 + 个人沉淀同时落地。**
 
-[![Version](https://img.shields.io/badge/version-v0.5.0-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
+[![Version](https://img.shields.io/badge/version-v0.6.0-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Tests](https://img.shields.io/badge/tests-143%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-148%20passing-brightgreen.svg)](#测试)
 [![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6.svg)](https://www.typescriptlang.org/)
 
 </div>
@@ -230,7 +230,7 @@ npm run build       # 产物输出到 dist/
 | `npm install` | 安装依赖 |
 | `npm run dev` | Vite + CRXJS 开发模式，启用 HMR；产物写入 `dist/`，加载该目录到浏览器即可热更新 |
 | `npm run build` | 生产构建，输出到 `dist/` |
-| `npm run test` | Vitest 单元测试（共 143 条） |
+| `npm run test` | Vitest 单元测试（共 148 条） |
 | `npm run test:watch` | Vitest 监视模式 |
 | `npm run test:coverage` | 测试 + 覆盖率报告 |
 | `npm run typecheck` | `tsc --noEmit`，仅做类型检查 |
@@ -289,7 +289,7 @@ edge-translate-extension/
 │       └── css.d.ts                 # Vite ?inline CSS 模块声明
 ├── tests/
 │   ├── setup.ts                   # chrome.* mock + webcrypto polyfill
-│   └── unit/                      # Vitest 单元测试（143 条）
+│   └── unit/                      # Vitest 单元测试（148 条）
 ├── public/
 │   └── icons/                     # 16/32/48/128 PNG（翻译主题）
 ├── docs/superpowers/
@@ -317,7 +317,7 @@ edge-translate-extension/
 ## 测试
 
 ```bash
-npm run test              # 143 个单元测试
+npm run test              # 148 个单元测试
 npm run test:coverage     # 含覆盖率报告
 ```
 
@@ -340,6 +340,12 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
 ## 版本与发布
 
+### v0.6.0 (2026-05-08)
+
+- **更名**：「翻译插件」→「工具插件」，包括用户可见与开发者可见的所有字面量
+- **备忘录导出**：侧边栏「备忘录」Tab 加「导出」按钮，一键下载所有（或当前过滤后的）备忘录为 `memos-YYYY-MM-DD.md`
+- 测试覆盖：148 个单元测试（含新增 sidepanel-export 测试文件）
+
 ### v0.5.0 (2026-05-08)
 
 - 新增划词知识收藏（备忘录）：工具栏 [存] 按钮 + QA 答案「保存到备忘录」+ 右键菜单 三入口
@@ -347,11 +353,12 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 - 工具栏新增 [设] 按钮：一键打开设置页
 - QA 答案对齐翻译卡片：每条 AI 气泡含「复制原文 / 复制答案 / 保存到备忘录」三按钮
 - 通用 Toast 组件（Shadow DOM 单例）：右上角 2 秒淡出，可点跳侧边栏
-- 测试覆盖：143 个单元测试（含新增 memo-storage / toast 测试文件）
+- 测试覆盖：148 个单元测试（含新增 memo-storage / toast / sidepanel-export 测试文件）
 
 | 版本 | 主要内容 |
 | --- | --- |
-| [`v0.5.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.5.0) | 新增备忘录：工具栏 [存] + QA 「保存到备忘录」+ 右键菜单三入口；侧边栏备忘录 Tab；工具栏 [设] 按钮；通用 Toast 组件；143 个单元测试 |
+| [`v0.6.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.6.0) | 更名「翻译插件」→「工具插件」；备忘录导出（`memos-YYYY-MM-DD.md`）；148 个单元测试 |
+| [`v0.5.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.5.0) | 新增备忘录：工具栏 [存] + QA 「保存到备忘录」+ 右键菜单三入口；侧边栏备忘录 Tab；工具栏 [设] 按钮；通用 Toast 组件；143 个单元测试（当时） |
 | [`v0.4.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.4.0) | 划词浮标升级为工具栏 [翻][问]；新增划词问答（多轮对话 + 会话持久化）；侧边栏新增「问答」Tab；设置新增 enableQA / qaSystemPrompt / qaMaxTurns；右键菜单新增「问答选中内容」；120 个单元测试 |
 | [`v0.3.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.3.0) | 划词浮标触发器（蓝底白「翻」字）；浮动卡片 + 侧边栏双向复制（原文 / 译文） |
 | [`v0.2.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.2.0) | 右键菜单 + Alt+T 全链路稳定；DeepSeek 默认；选项页对比度优化；Windows 构建容错 |
@@ -365,8 +372,8 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
 - ✅ **v0.4.0 划词问答**（已完成）
 - ✅ **v0.5.0 划词知识收藏**（已完成）
-- ⏳ **v0.6.0 备忘录整理增强**（手动标签 / 按来源归组 / 跨设备同步）
-- ⏳ **v0.7.0 沉淀工具**（批量 Markdown 导出 / LLM 自动整理）
+- ✅ **v0.6.0 更名 + 备忘录导出**（已完成）
+- ⏳ **v0.7.0 备忘录整理增强 + 沉淀工具**（手动标签 / 按来源归组 / 跨设备同步 / LLM 自动整理）
 - [ ] PDF.js 阅读器内选区翻译
 - [ ] 整页翻译（双语对照）
 - [ ] 长文自动分段并行翻译
