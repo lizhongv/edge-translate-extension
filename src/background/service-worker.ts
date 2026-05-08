@@ -125,12 +125,16 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         const windowId = sender.tab?.windowId;
         if (windowId !== undefined) {
             chrome.sidePanel.open({ windowId }).catch((e) => {
+                // Known limitation: if user gesture chain breaks, sidePanel.open
+                // throws and the user must click the extension icon manually.
                 console.warn("[翻译插件] sidePanel.open failed:", e);
             });
         } else {
             chrome.windows.getLastFocused().then((w) => {
                 if (w.id !== undefined) {
                     chrome.sidePanel.open({ windowId: w.id }).catch((e) => {
+                        // Known limitation: if user gesture chain breaks, sidePanel.open
+                        // throws and the user must click the extension icon manually.
                         console.warn("[翻译插件] sidePanel.open fallback failed:", e);
                     });
                 }

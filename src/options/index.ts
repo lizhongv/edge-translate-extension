@@ -106,9 +106,6 @@ $<HTMLButtonElement>("testConn").addEventListener("click", async () => {
 });
 
 void (async () => {
-    console.time("[翻译插件] options getSettings");
     const s = await getSettings();
-    console.timeEnd("[翻译插件] options getSettings");
     fillForm(s);
-    console.log("[翻译插件] options 表单已填充");
 })();

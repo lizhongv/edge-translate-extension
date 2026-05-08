@@ -8,8 +8,6 @@ import { msgTaskTranslate, msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenO
 import { showToast } from "../shared/toast";
 import type { ChatMessage, LLMError, QASession, RuntimeMessage } from "../shared/types";
 
-console.log("[翻译插件] content script 已加载:", location.href);
-
 const card = new FloatingCard();
 const toolbar = new Toolbar();
 const qaCard = new QACard();

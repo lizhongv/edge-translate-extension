@@ -5,6 +5,7 @@ import {
 } from "../shared/storage";
 import {
     msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg,
+    rtMemoUpdated,
 } from "../shared/messages";
 import {
     createMessageBubble, appendTokenToBubble, finalizeBubble, setBubbleError,
@@ -55,12 +56,14 @@ function setView(v: View): void {
 
 tabBtns.forEach(b => b.addEventListener("click", () => {
     const t = b.dataset.tab as "translate" | "qa" | "memo";
+    if (currentView === "detail-qa" && detailPort) cleanupDetailPort();
     setView(t);
     void refresh();
 }));
 
 backBtn.addEventListener("click", () => {
     if (currentView === "detail-qa") {
+        if (detailPort) cleanupDetailPort();
         currentDetailSessionId = null;
         setView("qa");
     } else if (currentView === "detail-memo") {
@@ -215,6 +218,7 @@ async function saveQAAnswerToMemoFromSidepanel(
             sourceContext,
             pageUrl: pageOrigin,
         });
+        chrome.runtime.sendMessage(rtMemoUpdated()).catch(() => {/* ignore */});
         showToast("已保存 ✓");
         if (currentView === "memo") void refresh();
     } catch (e) {

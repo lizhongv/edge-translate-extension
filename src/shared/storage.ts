@@ -153,8 +153,10 @@ const memoUuid = (): string =>
         return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
     });
 
+const MEMO_TITLE_MAX_LEN = 30;
+
 const autoTitle = (content: string): string =>
-    content.replace(/\n/g, " ").trim().slice(0, 30);
+    content.replace(/\n/g, " ").trim().slice(0, MEMO_TITLE_MAX_LEN);
 
 export async function getMemos(): Promise<import("./types").Memo[]> {
     const r = await chrome.storage.local.get(MEMOS_KEY);
