@@ -2,12 +2,12 @@
 
 # 翻译插件 · Edge Translate Extension
 
-**用左键划词调出工具栏，[翻] 一键翻译，[问] 多轮追问 —— 让 OpenAI 兼容大模型流式响应瞬间出现在网页上。**
+**用左键划词调出工具栏：[翻] 一键翻译，[问] 多轮追问，[存] 保存知识 —— 让 OpenAI 兼容大模型流式响应 + 个人沉淀同时落地。**
 
-[![Version](https://img.shields.io/badge/version-v0.4.0-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
+[![Version](https://img.shields.io/badge/version-v0.5.0-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Tests](https://img.shields.io/badge/tests-120%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-143%20passing-brightgreen.svg)](#测试)
 [![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6.svg)](https://www.typescriptlang.org/)
 
 </div>
@@ -36,7 +36,8 @@
 
 | 特性 | 说明 |
 | --- | --- |
-| 🖱️ **三种触发方式** | 划词工具栏（翻 / 问）/ 右键菜单 / `Alt+T` (翻译) `Alt+Q` (问答，可绑定) |
+| 🛠️ **工具栏 4 档** | 划词后弹出 [翻] [问] [存] [设] 工具栏，每档可独立开关；[设] 一键打开设置页 |
+| 🖱️ **三种触发方式** | 划词工具栏（翻 / 问 / 存 / 设）/ 右键菜单 / `Alt+T` (翻译) `Alt+Q` (问答，可绑定) |
 | 💬 **划词问答** | 选中文本 → 点 [问] → 多轮对话；会话保存到侧边栏可重新打开继续追问 |
 | 🌊 **流式呈现** | 译文 token 级增量显示，长文也能秒看首字 |
 | 🤖 **OpenAI 兼容 API** | 支持 OpenAI、DeepSeek、Moonshot、Qwen、Ollama 等任意兼容端点 |
@@ -49,7 +50,8 @@
 | 🌗 **深色模式** | 自动跟随系统主题 |
 | 🎨 **Shadow DOM 隔离** | 浮标和卡片样式不被宿主页面 CSS 污染 |
 | 📋 **双向复制** | 复制原文 / 复制译文按钮 |
-| 📑 **侧边栏 Tab** | 翻译历史 / 问答会话 双 Tab；问答 Session 可点入查看完整对话并继续 |
+| 📑 **侧边栏 Tab** | 翻译历史 / 问答会话 / 备忘录 三 Tab；问答 Session 可点入查看完整对话并继续 |
+| 📝 **划词知识收藏** | 工具栏 [存] / QA 答案「保存到备忘录」/ 右键菜单 三入口；本地保存可搜索可编辑 |
 
 ---
 
@@ -136,6 +138,13 @@ npm run build       # 产物输出到 dist/
 
 > 默认保留最近 6 轮对话作为上下文（可在设置中调整 `qaMaxTurns`）。
 
+### 划词知识收藏
+
+1. 选中网页文字 → 点工具栏 **[存]**（或右键 → 「保存选中到备忘录」）
+2. 右上角 toast 提示「已保存 ✓」，点「打开」直接跳转侧边栏「备忘录」Tab
+3. 在 QA 答案下也可点「保存到备忘录」→ AI 回复 + 原文一并存入
+4. 侧边栏「备忘录」Tab 看全部，支持搜索（标题+正文）、编辑（修改标题或正文）、删除
+
 ---
 
 ## 配置项详解
@@ -174,6 +183,13 @@ npm run build       # 产物输出到 dist/
 - **启用问答按钮** (`enableQA`)：默认开启。关闭后工具栏只显示 [翻]。
 - **问答系统提示词** (`qaSystemPrompt`)：默认提示模型基于选中文本回答问题，输出纯文本，与用户语种一致。可改为更专业的提示，例如「请用代码示例解释」「请按学术论文风格回答」。
 - **多轮上限** (`qaMaxTurns`)：默认 6（即最近 6 轮 = 12 条消息）。超出后自动丢弃最早一对。范围 1-20。
+
+### 备忘录
+
+- **启用 [存] 按钮** (`enableMemo`)：默认开。关闭后工具栏不显示 [存]。
+- **启用 [设] 按钮** (`enableSettingsButton`)：默认开。关闭后工具栏不显示 [设]（仍可通过右键扩展图标进入设置页）。
+
+备忘录数量上限沿用「历史保留上限」（`historyLimit`，默认 200 条），与翻译/问答共享同一上限。
 
 ### 兼容端点示例
 
@@ -214,7 +230,7 @@ npm run build       # 产物输出到 dist/
 | `npm install` | 安装依赖 |
 | `npm run dev` | Vite + CRXJS 开发模式，启用 HMR；产物写入 `dist/`，加载该目录到浏览器即可热更新 |
 | `npm run build` | 生产构建，输出到 `dist/` |
-| `npm run test` | Vitest 单元测试（共 120 条） |
+| `npm run test` | Vitest 单元测试（共 143 条） |
 | `npm run test:watch` | Vitest 监视模式 |
 | `npm run test:coverage` | 测试 + 覆盖率报告 |
 | `npm run typecheck` | `tsc --noEmit`，仅做类型检查 |
@@ -243,7 +259,9 @@ edge-translate-extension/
 │   │   ├── types.ts                 # Settings / HistoryItem / 消息协议 / 默认值
 │   │   ├── messages.ts              # 类型化消息构造与守卫
 │   │   ├── storage.ts               # chrome.storage 类型化封装（含超时降级）
-│   │   └── lang.ts                  # CJK 占比检测（仅供历史展示）
+│   │   ├── lang.ts                  # CJK 占比检测（仅供历史展示）
+│   │   ├── toast.ts                 # 新增 v0.5.0
+│   │   └── toast.css                # 新增 v0.5.0
 │   ├── background/                # Service Worker（MV3）
 │   │   ├── service-worker.ts        # 入口：菜单 / 快捷键 / Port 生命周期
 │   │   ├── translator.ts            # 翻译编排：缓存 + 流式 + 历史落库
@@ -271,7 +289,7 @@ edge-translate-extension/
 │       └── css.d.ts                 # Vite ?inline CSS 模块声明
 ├── tests/
 │   ├── setup.ts                   # chrome.* mock + webcrypto polyfill
-│   └── unit/                      # Vitest 单元测试（120 条）
+│   └── unit/                      # Vitest 单元测试（143 条）
 ├── public/
 │   └── icons/                     # 16/32/48/128 PNG（翻译主题）
 ├── docs/superpowers/
@@ -299,7 +317,7 @@ edge-translate-extension/
 ## 测试
 
 ```bash
-npm run test              # 120 个单元测试
+npm run test              # 143 个单元测试
 npm run test:coverage     # 含覆盖率报告
 ```
 
@@ -313,6 +331,8 @@ npm run test:coverage     # 含覆盖率报告
 - `content/selection.ts` — 选区辅助（3 用例）
 - `content/toolbar.ts` — 划词工具栏（翻 / 问 按钮）（含 isInEditable）
 - `background/qa.ts` — 问答会话编排（新增）
+- `shared/memo-storage.ts` — 备忘录存储（新增 v0.5.0）
+- `shared/toast.ts` — Toast 通知组件（新增 v0.5.0）
 
 UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
@@ -320,8 +340,18 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
 ## 版本与发布
 
+### v0.5.0 (2026-05-08)
+
+- 新增划词知识收藏（备忘录）：工具栏 [存] 按钮 + QA 答案「保存到备忘录」+ 右键菜单 三入口
+- 新增侧边栏「备忘录」Tab：列表 + 搜索（标题+正文）+ 详情编辑 + 删除
+- 工具栏新增 [设] 按钮：一键打开设置页
+- QA 答案对齐翻译卡片：每条 AI 气泡含「复制原文 / 复制答案 / 保存到备忘录」三按钮
+- 通用 Toast 组件（Shadow DOM 单例）：右上角 2 秒淡出，可点跳侧边栏
+- 测试覆盖：143 个单元测试（含新增 memo-storage / toast 测试文件）
+
 | 版本 | 主要内容 |
 | --- | --- |
+| [`v0.5.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.5.0) | 新增备忘录：工具栏 [存] + QA 「保存到备忘录」+ 右键菜单三入口；侧边栏备忘录 Tab；工具栏 [设] 按钮；通用 Toast 组件；143 个单元测试 |
 | [`v0.4.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.4.0) | 划词浮标升级为工具栏 [翻][问]；新增划词问答（多轮对话 + 会话持久化）；侧边栏新增「问答」Tab；设置新增 enableQA / qaSystemPrompt / qaMaxTurns；右键菜单新增「问答选中内容」；120 个单元测试 |
 | [`v0.3.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.3.0) | 划词浮标触发器（蓝底白「翻」字）；浮动卡片 + 侧边栏双向复制（原文 / 译文） |
 | [`v0.2.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.2.0) | 右键菜单 + Alt+T 全链路稳定；DeepSeek 默认；选项页对比度优化；Windows 构建容错 |
@@ -334,7 +364,9 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 ## 路线图
 
 - ✅ **v0.4.0 划词问答**（已完成）
-- ⏳ **v0.5.0 划词总结**（计划中）
+- ✅ **v0.5.0 划词知识收藏**（已完成）
+- ⏳ **v0.6.0 备忘录整理增强**（手动标签 / 按来源归组 / 跨设备同步）
+- ⏳ **v0.7.0 沉淀工具**（批量 Markdown 导出 / LLM 自动整理）
 - [ ] PDF.js 阅读器内选区翻译
 - [ ] 整页翻译（双语对照）
 - [ ] 长文自动分段并行翻译
