@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMemosMarkdown } from "../../src/sidepanel/index";
+import { buildMemosMarkdown } from "../../src/sidepanel/export-md";
 import type { Memo } from "../../src/shared/types";
 
 const mk = (id: string, title: string, content: string): Memo => ({

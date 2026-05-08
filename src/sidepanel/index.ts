@@ -12,6 +12,7 @@ import {
 } from "../shared/qa-render";
 import { showToast } from "../shared/toast";
 import type { ChatMessage, HistoryItem, LLMError, Memo, QASession } from "../shared/types";
+import { buildMemosMarkdown } from "./export-md";
 
 // ===== view state =====
 type View = "translate" | "qa" | "detail-qa" | "memo" | "detail-memo";
@@ -38,13 +39,6 @@ const memoItemTpl = document.getElementById("memo-item-tpl") as HTMLTemplateElem
 const memoDetailTpl = document.getElementById("memo-detail-tpl") as HTMLTemplateElement;
 
 const fmtTime = (ts: number): string => new Date(ts).toLocaleString();
-
-export function buildMemosMarkdown(memos: Memo[]): string {
-    if (memos.length === 0) return "";
-    return memos
-        .map(m => `# ${m.title}\n\n${m.content}\n`)
-        .join("\n---\n\n") + "\n---\n";
-}
 
 function exportMemos(memos: Memo[]): void {
     if (memos.length === 0) return;
