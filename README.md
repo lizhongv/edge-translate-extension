@@ -4,7 +4,7 @@
 
 **用左键划词调出工具栏：[翻] 一键翻译，[问] 多轮追问，[存] 保存知识 —— 让 OpenAI 兼容大模型流式响应 + 个人沉淀同时落地。**
 
-[![Version](https://img.shields.io/badge/version-v0.6.0-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
+[![Version](https://img.shields.io/badge/version-v0.6.1-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Tests](https://img.shields.io/badge/tests-148%20passing-brightgreen.svg)](#测试)
@@ -176,6 +176,7 @@ npm run build       # 产物输出到 dist/
 | **长文阈值** | 单次选区超过该字符数时弹出确认 | `5000` |
 | **历史条数上限** | 本地保留多少条历史，超出后按时间淘汰 | `200` |
 | **启用划词浮标** | 划词后是否在选区右下角显示一键翻译按钮 | `true` |
+| **强制页面可选** | 覆盖站点 `user-select: none`，让禁复制的页面也能划词。可能让站点拖动 / 选区类按钮变得可选。**设置后需刷新页面生效**。 | `false` |
 | 快捷键（仅展示） | 全局快捷键，实际修改入口在 `edge://extensions/shortcuts` | `Alt+T` |
 
 ### 问答（QA）
@@ -340,6 +341,15 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
 ## 版本与发布
 
+### v0.6.1 (2026-05-08)
+
+- **站点兼容性修复**：
+  - 事件监听切到 capture 阶段，绕过站点 `stopPropagation` 拦截（zhihu pin、jishuzhan 等之前不工作的站点现可用）
+  - manifest 加 `all_frames: true`，工具栏在跨域 iframe 内也能出现
+  - 新增「强制页面可选」设置（默认关）：覆盖站点的 `user-select: none`，需刷新页面生效
+- **已知未修**：站点用 `document.write` 重写整页、整页包在 closed Shadow DOM 内、canvas 渲染文字 — 这三类仍无法工作
+- 测试覆盖：148 个单元测试（无变化）
+
 ### v0.6.0 (2026-05-08)
 
 - **更名**：「翻译插件」→「工具插件」，包括用户可见与开发者可见的所有字面量
@@ -357,6 +367,7 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 
 | 版本 | 主要内容 |
 | --- | --- |
+| [`v0.6.1`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.6.1) | 站点兼容性修复：capture 阶段监听 + iframe 注入 + 可选「强制页面可选」 |
 | [`v0.6.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.6.0) | 更名「翻译插件」→「工具插件」；备忘录导出（`memos-YYYY-MM-DD.md`）；148 个单元测试 |
 | [`v0.5.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.5.0) | 新增备忘录：工具栏 [存] + QA 「保存到备忘录」+ 右键菜单三入口；侧边栏备忘录 Tab；工具栏 [设] 按钮；通用 Toast 组件；143 个单元测试（当时） |
 | [`v0.4.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.4.0) | 划词浮标升级为工具栏 [翻][问]；新增划词问答（多轮对话 + 会话持久化）；侧边栏新增「问答」Tab；设置新增 enableQA / qaSystemPrompt / qaMaxTurns；右键菜单新增「问答选中内容」；120 个单元测试 |
@@ -373,6 +384,7 @@ UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
 - ✅ **v0.4.0 划词问答**（已完成）
 - ✅ **v0.5.0 划词知识收藏**（已完成）
 - ✅ **v0.6.0 更名 + 备忘录导出**（已完成）
+- ✅ **v0.6.1 站点兼容性修复**（已完成）
 - ⏳ **v0.7.0 备忘录整理增强 + 沉淀工具**（手动标签 / 按来源归组 / 跨设备同步 / LLM 自动整理）
 - [ ] PDF.js 阅读器内选区翻译
 - [ ] 整页翻译（双语对照）
