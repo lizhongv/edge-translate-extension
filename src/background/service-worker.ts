@@ -115,10 +115,27 @@ chrome.action.onClicked.addListener((tab) => {
     chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {/* ignore */});
 });
 
-chrome.runtime.onMessage.addListener((msg) => {
+chrome.runtime.onMessage.addListener((msg, sender) => {
     if (!isRuntimeMessage(msg)) return;
     if (msg.type === "openOptions") {
         chrome.runtime.openOptionsPage();
+    } else if (msg.type === "openSidepanel") {
+        const tab = msg.tab ?? "translate";
+        chrome.storage.local.set({ last_sidepanel_tab: tab }).catch(() => {/* ignore */});
+        const windowId = sender.tab?.windowId;
+        if (windowId !== undefined) {
+            chrome.sidePanel.open({ windowId }).catch((e) => {
+                console.warn("[翻译插件] sidePanel.open failed:", e);
+            });
+        } else {
+            chrome.windows.getLastFocused().then((w) => {
+                if (w.id !== undefined) {
+                    chrome.sidePanel.open({ windowId: w.id }).catch((e) => {
+                        console.warn("[翻译插件] sidePanel.open fallback failed:", e);
+                    });
+                }
+            });
+        }
     }
 });
 
