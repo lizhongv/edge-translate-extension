@@ -29,6 +29,7 @@ const memoDetailEl = document.getElementById("detail-memo") as HTMLElement;
 const clearBtn = document.getElementById("clear") as HTMLButtonElement;
 const backBtn = document.getElementById("back") as HTMLButtonElement;
 const memoSearchInput = document.getElementById("memo-search") as HTMLInputElement;
+const memoExportBtn = document.getElementById("memo-export") as HTMLButtonElement;
 const tabBtns = document.querySelectorAll<HTMLButtonElement>(".tab");
 const itemTpl = document.getElementById("item-tpl") as HTMLTemplateElement;
 const qaItemTpl = document.getElementById("qa-item-tpl") as HTMLTemplateElement;
@@ -37,6 +38,31 @@ const memoItemTpl = document.getElementById("memo-item-tpl") as HTMLTemplateElem
 const memoDetailTpl = document.getElementById("memo-detail-tpl") as HTMLTemplateElement;
 
 const fmtTime = (ts: number): string => new Date(ts).toLocaleString();
+
+export function buildMemosMarkdown(memos: Memo[]): string {
+    if (memos.length === 0) return "";
+    return memos
+        .map(m => `# ${m.title}\n\n${m.content}\n`)
+        .join("\n---\n\n") + "\n---\n";
+}
+
+function exportMemos(memos: Memo[]): void {
+    if (memos.length === 0) return;
+    try {
+        const md = buildMemosMarkdown(memos);
+        const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `memos-${new Date().toISOString().slice(0, 10)}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("已导出 ✓");
+    } catch (e) {
+        console.error("[工具插件] export failed:", e);
+        showToast("导出失败");
+    }
+}
 
 // ===== view switching =====
 function setView(v: View): void {
@@ -49,6 +75,7 @@ function setView(v: View): void {
     backBtn.hidden = v !== "detail-qa" && v !== "detail-memo";
     clearBtn.hidden = v === "detail-qa" || v === "detail-memo";
     memoSearchInput.hidden = v !== "memo";
+    memoExportBtn.hidden = v !== "memo";
     tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === v
         || (b.dataset.tab === "qa" && v === "detail-qa")
         || (b.dataset.tab === "memo" && v === "detail-memo")));
@@ -90,6 +117,12 @@ clearBtn.addEventListener("click", async () => {
 memoSearchInput.addEventListener("input", () => {
     memoQuery = memoSearchInput.value.trim().toLowerCase();
     if (currentView === "memo") void refresh();
+});
+
+memoExportBtn.addEventListener("click", async () => {
+    const all = await getMemos();
+    const filtered = all.filter(m => memoMatches(m, memoQuery));
+    exportMemos(filtered);
 });
 
 // ===== translate list =====
@@ -307,6 +340,7 @@ function memoMatches(memo: Memo, query: string): boolean {
 function renderMemoList(memos: Memo[]): void {
     memoListEl.innerHTML = "";
     const filtered = memos.filter(m => memoMatches(m, memoQuery));
+    memoExportBtn.disabled = filtered.length === 0;
     if (filtered.length === 0) {
         memoListEl.innerHTML = `<div class="empty">${memoQuery ? "无匹配项" : "暂无备忘录"}</div>`;
         return;
