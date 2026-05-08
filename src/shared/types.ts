@@ -11,6 +11,9 @@ export type Settings = {
     historyLimit: number;
     shortcut: string;
     enableHoverButton: boolean;
+    enableQA: boolean;
+    qaSystemPrompt: string;
+    qaMaxTurns: number;
 };
 
 export type HistoryItem = {
@@ -39,8 +42,12 @@ export type LLMError = {
     httpStatus?: number;
 };
 
+export type TaskRequest =
+    | { task: "translate"; text: string }
+    | { task: "qa"; sessionId: string; sourceText: string; messages: ChatMessage[] };
+
 export type PortMessage =
-    | { type: "translate"; text: string }
+    | { type: "task"; payload: TaskRequest }
     | { type: "token"; chunk: string }
     | { type: "done"; full: string }
     | { type: "error"; error: LLMError };
@@ -49,6 +56,8 @@ export type RuntimeMessage =
     | { type: "showCard"; text?: string }
     | { type: "requestTranslate" }
     | { type: "historyUpdated" }
+    | { type: "qaSessionUpdated"; sessionId: string }
+    | { type: "openQA"; text?: string }
     | { type: "openOptions" };
 
 export type CacheEntry = {
@@ -57,11 +66,32 @@ export type CacheEntry = {
     timestamp: number;
 };
 
+export type ChatMessage = {
+    role: "user" | "assistant";
+    content: string;
+};
+
+export type QASession = {
+    id: string;
+    sourceText: string;
+    pageOrigin?: string;
+    model: string;
+    createdAt: number;
+    updatedAt: number;
+    messages: ChatMessage[];
+};
+
 export const DEFAULT_SYSTEM_PROMPT =
     "You are a professional translator. Translate the user's input into {{TARGET_LANG}}.\n" +
     "Output only the translation itself: no explanations, no quotes, no markdown.\n" +
     "Preserve original formatting (line breaks, lists).\n" +
     "If the input is already in {{TARGET_LANG}}, translate it into {{SECONDARY_LANG}} instead.";
+
+export const DEFAULT_QA_SYSTEM_PROMPT =
+    "You are a helpful assistant. The user has selected a passage of text from a webpage and will ask questions about it.\n" +
+    "The selected text is provided as context. Answer the user's questions concisely and accurately, in the same language the user uses.\n" +
+    "If the user's question is unrelated to the text, still try to be helpful.\n" +
+    "Output plain text. Do not use markdown unless asked.";
 
 export const DEFAULT_SETTINGS: Settings = {
     baseUrl: "https://api.deepseek.com/v1",
@@ -76,4 +106,7 @@ export const DEFAULT_SETTINGS: Settings = {
     historyLimit: 200,
     shortcut: "Alt+T",
     enableHoverButton: true,
+    enableQA: true,
+    qaSystemPrompt: DEFAULT_QA_SYSTEM_PROMPT,
+    qaMaxTurns: 6,
 };

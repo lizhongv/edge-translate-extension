@@ -143,7 +143,12 @@ describe("stream", () => {
         const settings = { ...DEFAULT_SETTINGS, baseUrl: "https://api.x", apiKey: "k", model: "m" };
         const fetchSpy = vi.fn().mockResolvedValue(mkSseResponse(200, happy));
         const out: string[] = [];
-        for await (const t of stream("hi", "中文", settings, new AbortController().signal, fetchSpy)) {
+        for await (const t of stream(
+            { kind: "translate", text: "hi", target: "中文" },
+            settings,
+            new AbortController().signal,
+            fetchSpy
+        )) {
             out.push(t);
         }
         expect(out).toEqual(["你好"]);
@@ -163,7 +168,12 @@ describe("stream", () => {
             .mockResolvedValueOnce(mkSseResponse(429, ""))
             .mockResolvedValueOnce(mkSseResponse(200, happy));
         const out: string[] = [];
-        for await (const t of stream("hi", "中文", settings, new AbortController().signal, fetchSpy)) {
+        for await (const t of stream(
+            { kind: "translate", text: "hi", target: "中文" },
+            settings,
+            new AbortController().signal,
+            fetchSpy
+        )) {
             out.push(t);
         }
         expect(fetchSpy).toHaveBeenCalledTimes(3);
@@ -174,7 +184,12 @@ describe("stream", () => {
         const settings = { ...DEFAULT_SETTINGS, baseUrl: "https://api.x", apiKey: "k", model: "m" };
         const fetchSpy = vi.fn().mockResolvedValue(mkSseResponse(401, ""));
         await expect(async () => {
-            for await (const _ of stream("hi", "中文", settings, new AbortController().signal, fetchSpy)) {
+            for await (const _ of stream(
+                { kind: "translate", text: "hi", target: "中文" },
+                settings,
+                new AbortController().signal,
+                fetchSpy
+            )) {
                 /* noop */
             }
         }).rejects.toMatchObject({ code: "auth" });
@@ -185,7 +200,12 @@ describe("stream", () => {
         const settings = { ...DEFAULT_SETTINGS, baseUrl: "https://api.x", apiKey: "", model: "m" };
         const fetchSpy = vi.fn();
         await expect(async () => {
-            for await (const _ of stream("hi", "中文", settings, new AbortController().signal, fetchSpy)) {
+            for await (const _ of stream(
+                { kind: "translate", text: "hi", target: "中文" },
+                settings,
+                new AbortController().signal,
+                fetchSpy
+            )) {
                 /* noop */
             }
         }).rejects.toMatchObject({ code: "auth" });
@@ -204,12 +224,38 @@ describe("stream", () => {
         });
         const promise = (async () => {
             const out: string[] = [];
-            for await (const t of stream("hi", "中文", settings, ctrl.signal, fetchSpy)) {
+            for await (const t of stream(
+                { kind: "translate", text: "hi", target: "中文" },
+                settings,
+                ctrl.signal,
+                fetchSpy
+            )) {
                 out.push(t);
             }
             return out;
         })();
         ctrl.abort();
         await expect(promise).rejects.toMatchObject({ code: "aborted" });
+    });
+
+    it("stream({kind:'chat'}) sends system + messages array", async () => {
+        const settings = { ...DEFAULT_SETTINGS, baseUrl: "https://api.x", apiKey: "k", model: "m" };
+        const fetchSpy = vi.fn().mockResolvedValue(mkSseResponse(200, happy));
+        const ctrl = new AbortController();
+        const out: string[] = [];
+        for await (const t of stream(
+            { kind: "chat", system: "SYS", messages: [{ role: "user", content: "Q" }] },
+            settings,
+            ctrl.signal,
+            fetchSpy
+        )) {
+            out.push(t);
+        }
+        expect(out.join("")).toBe("你好");
+        const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+        expect(body.messages).toEqual([
+            { role: "system", content: "SYS" },
+            { role: "user", content: "Q" },
+        ]);
     });
 });

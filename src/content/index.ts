@@ -1,14 +1,96 @@
 import { FloatingCard } from "./floating-card";
-import { HoverButton, isInEditable } from "./hover-button";
+import { Toolbar } from "./toolbar";
+import { QACard } from "./qa-card";
+import { isInEditable } from "./dom-utils";
 import { getSelectionRect, getSelectionText } from "./selection";
 import { getPublicSettings } from "../shared/storage";
-import { msgTranslate, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
-import type { LLMError, RuntimeMessage } from "../shared/types";
+import { msgTaskTranslate, msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
+import type { ChatMessage, LLMError, QASession, RuntimeMessage } from "../shared/types";
 
 console.log("[翻译插件] content script 已加载:", location.href);
 
 const card = new FloatingCard();
-const hoverButton = new HoverButton();
+const toolbar = new Toolbar();
+const qaCard = new QACard();
+let qaSession: QASession | null = null;
+let qaPort: chrome.runtime.Port | null = null;
+let qaPartial = "";
+
+const uuid = (): string =>
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+
+function disconnectQA(): void {
+    if (qaPort) {
+        try { qaPort.disconnect(); } catch {/* ignore */}
+        qaPort = null;
+    }
+}
+
+function sendQAMessages(messages: ChatMessage[]): void {
+    if (!qaSession) return;
+    void getPublicSettings().then((s) => {
+        if (messages.length >= s.qaMaxTurns * 2) {
+            qaCard.showTurnCapNotice(s.qaMaxTurns);
+        }
+    });
+    qaPartial = "";
+    disconnectQA();
+    qaCard.beginAssistant();
+    const port = chrome.runtime.connect({ name: "task" });
+    qaPort = port;
+    port.onMessage.addListener((msg: unknown) => {
+        if (isTokenMsg(msg)) {
+            qaPartial += msg.chunk;
+            qaCard.appendToken(msg.chunk);
+        } else if (isDoneMsg(msg)) {
+            qaCard.endAssistant(msg.full);
+        } else if (isErrorMsg(msg)) {
+            qaCard.failAssistant(msg.error as LLMError, qaPartial);
+        }
+    });
+    port.onDisconnect.addListener(() => { qaPort = null; });
+    port.postMessage(msgTaskQA(qaSession.id, qaSession.sourceText, messages));
+}
+
+async function openQACard(text: string): Promise<void> {
+    if (!text) return;
+    toolbar.hide();
+    const rect = getSelectionRect();
+    qaSession = {
+        id: uuid(),
+        sourceText: text,
+        model: "",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: [],
+    };
+    qaCard.mount(rect, text, {
+        onSend: (messages: ChatMessage[]) => sendQAMessages(messages),
+        onClose: () => {
+            if (qaPort) {
+                // streaming in progress → rollback the in-flight user turn
+                qaCard.rollbackUserTurn();
+            }
+            disconnectQA();
+            qaSession = null;
+        },
+        onOpenOptions: () => {
+            chrome.runtime.sendMessage(rtOpenOptions()).catch(() => {/* ignore */});
+        },
+        onRetry: () => {
+            if (!qaSession) return;
+            sendQAMessages(qaCard.getMessages());
+        },
+    });
+}
+
+const TOOLBAR_ACTIONS = [
+    { id: "translate", char: "翻", label: "翻译" },
+    { id: "qa", char: "问", label: "问答" },
+];
 let currentPort: chrome.runtime.Port | null = null;
 let lastText = "";
 let partial = "";
@@ -23,7 +105,7 @@ function disconnect(): void {
 function startTranslation(text: string): void {
     partial = "";
     disconnect();
-    const port = chrome.runtime.connect({ name: "translate" });
+    const port = chrome.runtime.connect({ name: "task" });
     currentPort = port;
     port.onMessage.addListener((msg: unknown) => {
         if (isTokenMsg(msg)) {
@@ -38,7 +120,7 @@ function startTranslation(text: string): void {
     port.onDisconnect.addListener(() => {
         currentPort = null;
     });
-    port.postMessage(msgTranslate(text));
+    port.postMessage(msgTaskTranslate(text));
 }
 
 async function handleTrigger(fallbackText?: string): Promise<void> {
@@ -49,7 +131,7 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
         console.warn("[翻译插件] 没有可翻译的文本（选区已丢失且菜单未带文本）");
         return;
     }
-    hoverButton.hide();
+    toolbar.hide();
     const rect = getSelectionRect();
     lastText = text;
     const settings = await getPublicSettings();
@@ -79,55 +161,60 @@ async function handleTrigger(fallbackText?: string): Promise<void> {
 
 // ===== 划词浮标编排 =====
 
-async function maybeShowHoverButton(): Promise<void> {
+async function maybeShowToolbar(): Promise<void> {
     const text = getSelectionText();
     if (!text || text.length < 2) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     if (isInEditable(sel.anchorNode)) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     const settings = await getPublicSettings();
     if (settings.enableHoverButton === false) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
     const rect = getSelectionRect();
     if (!rect) {
-        hoverButton.hide();
+        toolbar.hide();
         return;
     }
-    hoverButton.show(rect, () => {
-        void handleTrigger(text);
+    const actions = TOOLBAR_ACTIONS.filter(a => a.id !== "qa" || settings.enableQA);
+    toolbar.show(rect, actions, (id) => {
+        if (id === "translate") {
+            void handleTrigger(text);
+        } else if (id === "qa") {
+            void openQACard(text);
+        }
     });
 }
 
 document.addEventListener("mouseup", () => {
-    setTimeout(() => { void maybeShowHoverButton(); }, 0);
+    setTimeout(() => { void maybeShowToolbar(); }, 0);
 });
 
 document.addEventListener("selectionchange", () => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.toString().trim().length === 0) {
-        hoverButton.hide();
+        toolbar.hide();
     }
 });
 
 document.addEventListener("mousedown", (e) => {
-    if (!hoverButton.isShown()) return;
-    if (hoverButton.contains(e.target)) return;
-    hoverButton.hide();
+    if (!toolbar.isShown()) return;
+    if (toolbar.contains(e.target)) return;
+    toolbar.hide();
 }, true);
 
 window.addEventListener("scroll", () => {
-    hoverButton.hide();
+    toolbar.hide();
 }, true);
 
 // ===== 现有 chrome.runtime 消息入口 =====
@@ -139,5 +226,8 @@ chrome.runtime.onMessage.addListener((msg: RuntimeMessage | { type: string }) =>
         void handleTrigger(m.text);
     } else if (m.type === "requestTranslate") {
         void handleTrigger();
+    } else if (m.type === "openQA") {
+        const text = (m.text || getSelectionText()).trim();
+        if (text) void openQACard(text);
     }
 });

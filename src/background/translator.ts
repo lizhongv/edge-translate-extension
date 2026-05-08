@@ -2,12 +2,11 @@ import type { LLMError, Settings } from "../shared/types";
 import { msgDone, msgError, msgToken } from "../shared/messages";
 import { appendHistory, getSettings } from "../shared/storage";
 import { getCachedTranslation, setCachedTranslation } from "./cache";
-import { stream as defaultStream } from "./llm-client";
+import { stream as defaultStream, type StreamInput } from "./llm-client";
 
 type Port = { postMessage(msg: unknown): void };
 type StreamFn = (
-    text: string,
-    target: string,
+    input: StreamInput,
     settings: Settings,
     signal: AbortSignal
 ) => AsyncGenerator<string>;
@@ -45,7 +44,7 @@ export async function translate(
 
     let full = "";
     try {
-        for await (const chunk of streamFn(text, target, settings, signal)) {
+        for await (const chunk of streamFn({ kind: "translate", text, target }, settings, signal)) {
             full += chunk;
             port.postMessage(msgToken(chunk));
         }

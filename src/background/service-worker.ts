@@ -1,22 +1,24 @@
 import { translate } from "./translator";
+import { answerQA } from "./qa";
 import {
-    rtShowCard, rtRequestTranslate, rtHistoryUpdated,
-    isTranslateMsg, isRuntimeMessage,
+    rtShowCard, rtRequestTranslate, rtHistoryUpdated, rtOpenQA,
+    rtQASessionUpdated, isTaskMsg, isRuntimeMessage,
 } from "../shared/messages";
 
 const MENU_ID = "fayichajian-translate-selection";
+const MENU_QA_ID = "fayichajian-qa-selection";
 
 const isRestrictedUrl = (url: string | undefined): boolean => {
     if (!url) return true;
     return /^(chrome|edge|about|chrome-extension|moz-extension|file):/i.test(url);
 };
 
-const notifyRestricted = () => {
+const notifyRestricted = (action: "翻译" | "问答" = "翻译") => {
     chrome.notifications.create({
         type: "basic",
         iconUrl: chrome.runtime.getURL("icons/128.png"),
         title: "翻译插件",
-        message: "无法在此页面翻译（受限页面）",
+        message: `无法在此页面${action}（受限页面）`,
     });
 };
 
@@ -30,6 +32,14 @@ function registerContextMenu(): void {
             const err = chrome.runtime.lastError;
             if (err) console.error("[翻译插件] 注册右键菜单失败:", err.message);
             else console.log("[翻译插件] 右键菜单已注册");
+        });
+        chrome.contextMenus.create({
+            id: MENU_QA_ID,
+            title: "问答选中内容",
+            contexts: ["selection"],
+        }, () => {
+            const err = chrome.runtime.lastError;
+            if (err) console.error("[翻译插件] 注册问答菜单失败:", err.message);
         });
     });
 }
@@ -66,24 +76,25 @@ async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId !== MENU_ID) return;
-    console.log("[翻译插件] 右键点击，selectionText=", info.selectionText?.slice(0, 50));
-    if (!tab?.id || isRestrictedUrl(tab.url)) {
-        notifyRestricted();
-        return;
+    if (info.menuItemId === MENU_ID) {
+        if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("翻译"); return; }
+        void dispatchToTab(tab.id, rtShowCard(info.selectionText));
+    } else if (info.menuItemId === MENU_QA_ID) {
+        if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("问答"); return; }
+        void dispatchToTab(tab.id, rtOpenQA(info.selectionText));
     }
-    void dispatchToTab(tab.id, rtShowCard(info.selectionText));
 });
 
 chrome.commands.onCommand.addListener((command) => {
-    if (command !== "translate") return;
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs[0];
-        if (!tab?.id || isRestrictedUrl(tab.url)) {
-            notifyRestricted();
-            return;
+        if (command === "translate") {
+            if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("翻译"); return; }
+            void dispatchToTab(tab.id, rtRequestTranslate());
+        } else if (command === "qa") {
+            if (!tab?.id || isRestrictedUrl(tab.url)) { notifyRestricted("问答"); return; }
+            void dispatchToTab(tab.id, rtOpenQA());
         }
-        void dispatchToTab(tab.id, rtRequestTranslate());
     });
 });
 
@@ -100,7 +111,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 chrome.runtime.onConnect.addListener((port) => {
-    if (port.name !== "translate") return;
+    if (port.name !== "task") return;
     const ctrl = new AbortController();
     let pageOrigin: string | undefined;
     try {
@@ -108,9 +119,15 @@ chrome.runtime.onConnect.addListener((port) => {
     } catch { /* ignore */ }
 
     port.onMessage.addListener(async (msg) => {
-        if (!isTranslateMsg(msg)) return;
-        await translate(msg.text, port, ctrl.signal, undefined, pageOrigin);
-        chrome.runtime.sendMessage(rtHistoryUpdated()).catch(() => {/* no listener ok */});
+        if (!isTaskMsg(msg)) return;
+        const p = msg.payload;
+        if (p.task === "translate") {
+            await translate(p.text, port, ctrl.signal, undefined, pageOrigin);
+            chrome.runtime.sendMessage(rtHistoryUpdated()).catch(() => {/* no listener ok */});
+        } else if (p.task === "qa") {
+            await answerQA(p.sessionId, p.sourceText, p.messages, port, ctrl.signal, pageOrigin);
+            chrome.runtime.sendMessage(rtQASessionUpdated(p.sessionId)).catch(() => {/* no listener ok */});
+        }
     });
 
     port.onDisconnect.addListener(() => {
