@@ -3,8 +3,9 @@ import { Toolbar } from "./toolbar";
 import { QACard } from "./qa-card";
 import { isInEditable } from "./dom-utils";
 import { getSelectionRect, getSelectionText } from "./selection";
-import { getPublicSettings } from "../shared/storage";
-import { msgTaskTranslate, msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions } from "../shared/messages";
+import { getPublicSettings, addMemo } from "../shared/storage";
+import { msgTaskTranslate, msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions, rtMemoUpdated, rtOpenSidepanel } from "../shared/messages";
+import { showToast } from "../shared/toast";
 import type { ChatMessage, LLMError, QASession, RuntimeMessage } from "../shared/types";
 
 console.log("[翻译插件] content script 已加载:", location.href);
@@ -94,9 +95,31 @@ const TOOLBAR_ACTIONS = [
     { id: "settings", char: "设", label: "打开设置" },
 ];
 
-async function saveSelectionAsMemo(_text: string, _pageUrl?: string, _pageTitle?: string): Promise<void> {
-    // implemented in Task 7
-    console.warn("[翻译插件] saveSelectionAsMemo stub");
+async function saveSelectionAsMemo(
+    text: string,
+    pageUrl?: string,
+    pageTitle?: string
+): Promise<void> {
+    if (!text || !text.trim()) return;
+    try {
+        await addMemo({
+            title: "",
+            content: text,
+            source: "selection",
+            pageUrl: pageUrl ?? location.href,
+            pageTitle: pageTitle ?? document.title,
+        });
+        chrome.runtime.sendMessage(rtMemoUpdated()).catch(() => {/* ignore */});
+        showToast("已保存 ✓", {
+            actionLabel: "打开",
+            onAction: () => {
+                chrome.runtime.sendMessage(rtOpenSidepanel("memo")).catch(() => {/* ignore */});
+            },
+        });
+    } catch (e) {
+        console.error("[翻译插件] saveSelectionAsMemo failed:", e);
+        showToast("保存失败：存储空间不足，请清理旧条目");
+    }
 }
 let currentPort: chrome.runtime.Port | null = null;
 let lastText = "";
@@ -245,5 +268,8 @@ chrome.runtime.onMessage.addListener((msg: RuntimeMessage | { type: string }) =>
     } else if (m.type === "openQA") {
         const text = (m.text || getSelectionText()).trim();
         if (text) void openQACard(text);
+    } else if (m.type === "saveMemo") {
+        const text = (m.text || getSelectionText()).trim();
+        if (text) void saveSelectionAsMemo(text, m.pageUrl, m.pageTitle);
     }
 });
