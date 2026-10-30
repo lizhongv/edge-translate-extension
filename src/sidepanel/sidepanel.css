@@ -303,3 +303,8 @@ main { padding: 8px 12px; }
     opacity: 0.4;
     cursor: not-allowed;
 }
+
+.thinking {
+    opacity: 0.6;
+    font-style: italic;
+}

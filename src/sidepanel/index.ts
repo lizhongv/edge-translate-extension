@@ -4,11 +4,12 @@ import {
     getMemos, addMemo, updateMemo, deleteMemo, clearMemos,
 } from "../shared/storage";
 import {
-    msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg,
+    msgTaskQA, isReasoningMsg, isTokenMsg, isDoneMsg, isErrorMsg,
     rtMemoUpdated,
 } from "../shared/messages";
 import {
     createMessageBubble, appendTokenToBubble, finalizeBubble, setBubbleError,
+    setBubbleThinking,
 } from "../shared/qa-render";
 import { showToast } from "../shared/toast";
 import type { ChatMessage, HistoryItem, LLMError, Memo, QASession } from "../shared/types";
@@ -275,7 +276,10 @@ async function detailSend(): Promise<void> {
 
     detailPort = chrome.runtime.connect({ name: "task" });
     detailPort.onMessage.addListener((msg: unknown) => {
-        if (isTokenMsg(msg)) {
+        if (isReasoningMsg(msg)) {
+            if (detailCurrentBubble) setBubbleThinking(detailCurrentBubble);
+            if (detailMessagesEl) detailMessagesEl.scrollTop = detailMessagesEl.scrollHeight;
+        } else if (isTokenMsg(msg)) {
             detailPartial += msg.chunk;
             if (detailCurrentBubble) appendTokenToBubble(detailCurrentBubble, msg.chunk);
             if (detailMessagesEl) detailMessagesEl.scrollTop = detailMessagesEl.scrollHeight;

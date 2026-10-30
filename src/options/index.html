@@ -16,6 +16,17 @@
             <label>API Key <input id="apiKey" type="password" /></label>
             <label>Model <input id="model" placeholder="deepseek-chat" /></label>
             <label>Temperature <input id="temperature" type="number" step="0.1" min="0" max="2" /></label>
+            <label>思考模式
+                <select id="thinkingMode">
+                    <option value="auto">自动（跟随模型默认，不发送开关）</option>
+                    <option value="on">开启（先推理后作答，更慢、输出 token 更贵）</option>
+                    <option value="off">关闭（直接作答，适合翻译）</option>
+                </select>
+            </label>
+            <p class="muted">
+                仅对支持思考开关的模型生效（如 DeepSeek V4）。选「自动」时请求体不包含该字段，对 OpenAI / Ollama 等端点无任何影响。
+                注意：思考模式下 Temperature 会被模型忽略。
+            </p>
             <label>System Prompt
                 <textarea id="systemPrompt" rows="6"></textarea>
             </label>

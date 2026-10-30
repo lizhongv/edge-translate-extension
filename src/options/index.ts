@@ -9,6 +9,7 @@ const inputs = {
     apiKey: $<HTMLInputElement>("apiKey"),
     model: $<HTMLInputElement>("model"),
     temperature: $<HTMLInputElement>("temperature"),
+    thinkingMode: $<HTMLSelectElement>("thinkingMode"),
     systemPrompt: $<HTMLTextAreaElement>("systemPrompt"),
     customHeaders: $<HTMLTextAreaElement>("customHeaders"),
     primaryTarget: $<HTMLInputElement>("primaryTarget"),
@@ -29,6 +30,7 @@ function fillForm(s: Settings): void {
     inputs.apiKey.value = s.apiKey;
     inputs.model.value = s.model;
     inputs.temperature.value = String(s.temperature);
+    inputs.thinkingMode.value = s.thinkingMode;
     inputs.systemPrompt.value = s.systemPrompt;
     inputs.customHeaders.value = JSON.stringify(s.customHeaders, null, 2);
     inputs.primaryTarget.value = s.primaryTarget;
@@ -57,6 +59,7 @@ function readForm(): Partial<Settings> {
         apiKey: inputs.apiKey.value,
         model: inputs.model.value.trim(),
         temperature: Number(inputs.temperature.value) || 0.2,
+        thinkingMode: inputs.thinkingMode.value as Settings["thinkingMode"],
         systemPrompt: inputs.systemPrompt.value,
         customHeaders: headers,
         primaryTarget: inputs.primaryTarget.value.trim(),
@@ -93,15 +96,22 @@ $<HTMLButtonElement>("testConn").addEventListener("click", async () => {
         const t0 = performance.now();
         const ctrl = new AbortController();
         let token = "";
-        for await (const t of stream({ kind: "translate", text: "hi", target: "中文" }, settings, ctrl.signal)) {
-            token += t;
+        let sawReasoning = false;
+        for await (const c of stream({ kind: "translate", text: "hi", target: "中文" }, settings, ctrl.signal)) {
+            if (c.type === "reasoning") {
+                sawReasoning = true;
+                result.textContent = "思考中…";
+                continue;
+            }
+            token += c.text;
             if (token.length > 4) {
                 ctrl.abort();
                 break;
             }
         }
         const dt = Math.round(performance.now() - t0);
-        result.textContent = `✅ ${settings.model} 响应正常 (${dt}ms)`;
+        const thinkNote = sawReasoning ? "，思考模式已开启" : "";
+        result.textContent = `✅ ${settings.model} 响应正常 (${dt}ms)${thinkNote}`;
     } catch (e) {
         const err = e as { code?: string; message?: string };
         result.textContent = `❌ ${err.message ?? "未知错误"}`;

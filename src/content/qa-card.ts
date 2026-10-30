@@ -2,6 +2,7 @@ import qaCardCss from "./qa-card.css?inline";
 import type { ChatMessage, LLMError } from "../shared/types";
 import {
     createMessageBubble, appendTokenToBubble, finalizeBubble, setBubbleError,
+    setBubbleThinking,
 } from "../shared/qa-render";
 import { addMemo } from "../shared/storage";
 import { showToast } from "../shared/toast";
@@ -150,6 +151,12 @@ export class QACard {
             this.currentAssistantBubble = bubble;
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         }
+    }
+
+    showThinking(): void {
+        if (!this.currentAssistantBubble) return;
+        setBubbleThinking(this.currentAssistantBubble);
+        if (this.messagesEl) this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 
     appendToken(chunk: string): void {

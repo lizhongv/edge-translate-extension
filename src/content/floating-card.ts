@@ -70,6 +70,17 @@ export class FloatingCard {
         this.footerEl.appendChild(closeBtn);
     }
 
+    /**
+     * Swaps the loading label while the model is emitting reasoning tokens.
+     * No-op once real content has started arriving (the spinner is gone by then),
+     * so a stray late reasoning chunk can never wipe the partial translation.
+     */
+    setThinking(): void {
+        if (!this.bodyEl) return;
+        if (!this.bodyEl.querySelector(".spinner")) return;
+        this.bodyEl.innerHTML = '<span class="spinner"></span>思考中…';
+    }
+
     requestLongConfirm(charCount: number): void {
         if (!this.bodyEl || !this.footerEl) return;
         this.bodyEl.textContent = `选中内容较长（${charCount} 字符），可能费用较高/响应较慢，是否继续？`;

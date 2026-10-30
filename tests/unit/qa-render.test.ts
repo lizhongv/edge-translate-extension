@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
     createMessageBubble, appendTokenToBubble, finalizeBubble,
-    setBubbleError,
+    setBubbleError, setBubbleThinking,
 } from "../../src/shared/qa-render";
 
 beforeEach(() => {
@@ -98,5 +98,24 @@ describe("setBubbleError", () => {
         setBubbleError(el, "API Key 无效");
         expect(el.classList.contains("error")).toBe(true);
         expect(el.querySelector(".content")?.textContent).toContain("API Key 无效");
+    });
+});
+
+describe("bubble thinking placeholder", () => {
+    it("setBubbleThinking adds a single 思考中… node", () => {
+        const b = createMessageBubble("assistant", "");
+        setBubbleThinking(b);
+        setBubbleThinking(b);
+        expect(b.querySelectorAll(".thinking").length).toBe(1);
+        expect(b.textContent).toContain("思考中");
+    });
+
+    it("appendTokenToBubble removes the placeholder before appending", () => {
+        const b = createMessageBubble("assistant", "");
+        setBubbleThinking(b);
+        appendTokenToBubble(b, "A");
+        appendTokenToBubble(b, "B");
+        expect(b.querySelector(".thinking")).toBeNull();
+        expect(b.textContent).toBe("AB");
     });
 });

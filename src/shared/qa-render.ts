@@ -8,9 +8,20 @@ export function createMessageBubble(role: "user" | "assistant", content: string)
     return el;
 }
 
+/** Marks a still-empty assistant bubble as thinking. Idempotent. */
+export function setBubbleThinking(bubble: HTMLElement): void {
+    const c = bubble.querySelector<HTMLElement>(".content");
+    if (!c || c.querySelector(".thinking")) return;
+    const note = document.createElement("span");
+    note.className = "thinking";
+    note.textContent = "思考中…";
+    c.appendChild(note);
+}
+
 export function appendTokenToBubble(bubble: HTMLElement, chunk: string): void {
     const c = bubble.querySelector<HTMLElement>(".content");
     if (!c) return;
+    c.querySelector(".thinking")?.remove();
     c.textContent = (c.textContent ?? "") + chunk;
 }
 

@@ -1,9 +1,12 @@
+export type ThinkingMode = "auto" | "on" | "off";
+
 export type Settings = {
     baseUrl: string;
     apiKey: string;
     model: string;
     systemPrompt: string;
     temperature: number;
+    thinkingMode: ThinkingMode;
     customHeaders: Record<string, string>;
     primaryTarget: string;
     secondaryTarget: string;
@@ -51,6 +54,7 @@ export type TaskRequest =
 
 export type PortMessage =
     | { type: "task"; payload: TaskRequest }
+    | { type: "reasoning" }
     | { type: "token"; chunk: string }
     | { type: "done"; full: string }
     | { type: "error"; error: LLMError };
@@ -119,6 +123,7 @@ export const DEFAULT_SETTINGS: Settings = {
     model: "deepseek-chat",
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
     temperature: 0.2,
+    thinkingMode: "auto",
     customHeaders: {},
     primaryTarget: "中文",
     secondaryTarget: "English",

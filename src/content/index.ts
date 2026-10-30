@@ -4,7 +4,7 @@ import { QACard } from "./qa-card";
 import { isInEditable } from "./dom-utils";
 import { getSelectionRect, getSelectionText } from "./selection";
 import { getPublicSettings, addMemo } from "../shared/storage";
-import { msgTaskTranslate, msgTaskQA, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions, rtMemoUpdated, rtOpenSidepanel } from "../shared/messages";
+import { msgTaskTranslate, msgTaskQA, isReasoningMsg, isTokenMsg, isDoneMsg, isErrorMsg, rtOpenOptions, rtMemoUpdated, rtOpenSidepanel } from "../shared/messages";
 import { showToast } from "../shared/toast";
 import type { ChatMessage, LLMError, QASession, RuntimeMessage } from "../shared/types";
 
@@ -61,7 +61,9 @@ function sendQAMessages(messages: ChatMessage[]): void {
     const port = chrome.runtime.connect({ name: "task" });
     qaPort = port;
     port.onMessage.addListener((msg: unknown) => {
-        if (isTokenMsg(msg)) {
+        if (isReasoningMsg(msg)) {
+            qaCard.showThinking();
+        } else if (isTokenMsg(msg)) {
             qaPartial += msg.chunk;
             qaCard.appendToken(msg.chunk);
         } else if (isDoneMsg(msg)) {
@@ -156,7 +158,9 @@ function startTranslation(text: string): void {
     const port = chrome.runtime.connect({ name: "task" });
     currentPort = port;
     port.onMessage.addListener((msg: unknown) => {
-        if (isTokenMsg(msg)) {
+        if (isReasoningMsg(msg)) {
+            card.setThinking();
+        } else if (isTokenMsg(msg)) {
             partial += msg.chunk;
             card.appendToken(msg.chunk);
         } else if (isDoneMsg(msg)) {

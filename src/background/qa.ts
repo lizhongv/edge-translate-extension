@@ -1,10 +1,10 @@
 import type { ChatMessage, LLMError, QASession, Settings } from "../shared/types";
-import { msgDone, msgError, msgToken } from "../shared/messages";
+import { msgDone, msgError, msgReasoning, msgToken } from "../shared/messages";
 import { getSettings, getQASessions, upsertQASession } from "../shared/storage";
-import { stream as defaultStream, type StreamInput } from "./llm-client";
+import { stream as defaultStream, type StreamChunk, type StreamInput } from "./llm-client";
 
 type Port = { postMessage(msg: unknown): void };
-type StreamFn = (input: StreamInput, settings: Settings, signal: AbortSignal) => AsyncGenerator<string>;
+type StreamFn = (input: StreamInput, settings: Settings, signal: AbortSignal) => AsyncGenerator<StreamChunk>;
 
 function buildSystem(qaSystemPrompt: string, sourceText: string): string {
     return `${qaSystemPrompt}\n\n---\nSelected text:\n${sourceText}`;
@@ -35,8 +35,12 @@ export async function answerQA(
             settings,
             signal
         )) {
-            full += chunk;
-            port.postMessage(msgToken(chunk));
+            if (chunk.type === "reasoning") {
+                port.postMessage(msgReasoning());
+                continue;
+            }
+            full += chunk.text;
+            port.postMessage(msgToken(chunk.text));
         }
     } catch (e) {
         const err = e as LLMError;

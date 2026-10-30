@@ -301,3 +301,37 @@ describe("QACard error actions", () => {
         expect(cb.onRetry).toHaveBeenCalledOnce();
     });
 });
+
+describe("QACard thinking indicator", () => {
+    const assistantBubble = (c: QACard): HTMLElement =>
+        [...innerRoot(c).querySelectorAll(".msg.assistant")].at(-1) as HTMLElement;
+
+    it("showThinking labels the streaming bubble as 思考中…", () => {
+        const c = new QACard();
+        c.mount(mkRect(10, 10, 100, 30), "source", makeCb());
+        c.beginAssistant();
+        c.showThinking();
+        expect(assistantBubble(c).textContent).toContain("思考中");
+        expect(assistantBubble(c).querySelector(".spinner")).not.toBeNull();
+    });
+
+    it("the first content token clears the 思考中… label", () => {
+        const c = new QACard();
+        c.mount(mkRect(10, 10, 100, 30), "source", makeCb());
+        c.beginAssistant();
+        c.showThinking();
+        c.appendToken("A");
+        const text = assistantBubble(c).textContent ?? "";
+        expect(text).not.toContain("思考中");
+        expect(text).toContain("A");
+    });
+
+    it("showThinking is idempotent", () => {
+        const c = new QACard();
+        c.mount(mkRect(10, 10, 100, 30), "source", makeCb());
+        c.beginAssistant();
+        c.showThinking();
+        c.showThinking();
+        expect(assistantBubble(c).querySelectorAll(".thinking").length).toBe(1);
+    });
+});

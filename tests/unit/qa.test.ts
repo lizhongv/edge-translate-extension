@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { answerQA } from "../../src/background/qa";
 import { setSettings, getQASessions, upsertQASession } from "../../src/shared/storage";
 import type { ChatMessage } from "../../src/shared/types";
+import type { StreamChunk } from "../../src/background/llm-client";
 
 const makePort = () => ({
     posted: [] as unknown[],
@@ -9,8 +10,8 @@ const makePort = () => ({
 });
 
 const mkStreamFn = (chunks: string[]) =>
-    vi.fn(async function* () {
-        for (const c of chunks) yield c;
+    vi.fn(async function* (): AsyncGenerator<StreamChunk> {
+        for (const c of chunks) yield { type: "content", text: c };
     });
 
 beforeEach(async () => {
@@ -24,6 +25,25 @@ beforeEach(async () => {
 });
 
 describe("answerQA basic flow", () => {
+    it("reasoning chunks signal the UI but never enter the answer or the session", async () => {
+        const port = makePort();
+        const streamFn = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
+            yield { type: "reasoning" };
+            yield { type: "content", text: "A" };
+            yield { type: "content", text: "B" };
+        });
+        const msgs: ChatMessage[] = [{ role: "user", content: "Q" }];
+        await answerQA("sid-think", "src", msgs, port, new AbortController().signal, undefined, streamFn);
+        expect(port.posted).toEqual([
+            { type: "reasoning" },
+            { type: "token", chunk: "A" },
+            { type: "token", chunk: "B" },
+            { type: "done", full: "AB" },
+        ]);
+        const saved = (await getQASessions()).find(s => s.id === "sid-think");
+        expect(saved?.messages.at(-1)).toEqual({ role: "assistant", content: "AB" });
+    });
+
     it("posts tokens then done", async () => {
         const port = makePort();
         const streamFn = mkStreamFn(["A", "B", "C"]);
@@ -124,10 +144,10 @@ describe("answerQA persistence", () => {
 describe("answerQA error handling", () => {
     it("posts error msg and does NOT upsert on failure", async () => {
         const port = makePort();
-        const streamFn = vi.fn(async function* () {
+        const streamFn = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
             throw { code: "auth", message: "bad", retryable: false };
             // eslint-disable-next-line no-unreachable
-            yield "x";
+            yield { type: "content", text: "x" };
         });
         const ctrl = new AbortController();
         const msgs: ChatMessage[] = [{ role: "user", content: "Q" }];
@@ -140,10 +160,10 @@ describe("answerQA error handling", () => {
 
     it("does NOT post error when aborted", async () => {
         const port = makePort();
-        const streamFn = vi.fn(async function* () {
+        const streamFn = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
             throw { code: "aborted", message: "已取消", retryable: false };
             // eslint-disable-next-line no-unreachable
-            yield "x";
+            yield { type: "content", text: "x" };
         });
         const ctrl = new AbortController();
         const msgs: ChatMessage[] = [{ role: "user", content: "Q" }];

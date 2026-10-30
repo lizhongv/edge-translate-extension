@@ -63,27 +63,47 @@ describe("parseSSEChunks", () => {
             'data: {"choices":[{"delta":{"content":"你"}}]}',
             'data: {"choices":[{"delta":{"content":"好"}}]}',
         ].join("\n\n") + "\n\n";
-        expect([...parseSSEChunks(lines)]).toEqual(["你", "好"]);
+        expect([...parseSSEChunks(lines)]).toEqual([
+            { type: "content", text: "你" },
+            { type: "content", text: "好" },
+        ]);
     });
 
     it("ignores [DONE]", () => {
         const lines = 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n';
-        expect([...parseSSEChunks(lines)]).toEqual(["hi"]);
+        expect([...parseSSEChunks(lines)]).toEqual([{ type: "content", text: "hi" }]);
     });
 
     it("ignores lines without data:", () => {
         const lines = ': comment\n\nevent: ping\n\ndata: {"choices":[{"delta":{"content":"x"}}]}\n\n';
-        expect([...parseSSEChunks(lines)]).toEqual(["x"]);
+        expect([...parseSSEChunks(lines)]).toEqual([{ type: "content", text: "x" }]);
     });
 
     it("yields empty content as empty string (skipped)", () => {
         const lines = 'data: {"choices":[{"delta":{}}]}\n\ndata: {"choices":[{"delta":{"content":"a"}}]}\n\n';
-        expect([...parseSSEChunks(lines)]).toEqual(["a"]);
+        expect([...parseSSEChunks(lines)]).toEqual([{ type: "content", text: "a" }]);
     });
 
     it("throws on malformed JSON", () => {
         const lines = "data: {oops\n\n";
         expect(() => [...parseSSEChunks(lines)]).toThrow();
+    });
+
+    it("reports reasoning_content as a reasoning chunk carrying no text", () => {
+        const lines = 'data: {"choices":[{"delta":{"reasoning_content":"let me think"}}]}\n\n';
+        expect([...parseSSEChunks(lines)]).toEqual([{ type: "reasoning" }]);
+    });
+
+    it("keeps reasoning and content chunks distinct and ordered", () => {
+        const lines =
+            'data: {"choices":[{"delta":{"reasoning_content":"hmm"}}]}\n\n' +
+            'data: {"choices":[{"delta":{"reasoning_content":"aha"}}]}\n\n' +
+            'data: {"choices":[{"delta":{"content":"你好"}}]}\n\n';
+        expect([...parseSSEChunks(lines)]).toEqual([
+            { type: "reasoning" },
+            { type: "reasoning" },
+            { type: "content", text: "你好" },
+        ]);
     });
 });
 
@@ -105,9 +125,12 @@ describe("streamFromResponse", () => {
             'data: {"choices":[{"delta":{"content":" world"}}]}\n\n' +
             'data: [DONE]\n\n'
         );
-        const out: string[] = [];
+        const out: unknown[] = [];
         for await (const t of streamFromResponse(r)) out.push(t);
-        expect(out).toEqual(["hello", " world"]);
+        expect(out).toEqual([
+            { type: "content", text: "hello" },
+            { type: "content", text: " world" },
+        ]);
     });
 
     it("handles split chunks across reads", async () => {
@@ -121,9 +144,9 @@ describe("streamFromResponse", () => {
             },
         });
         const r = new Response(stream);
-        const out: string[] = [];
+        const out: unknown[] = [];
         for await (const t of streamFromResponse(r)) out.push(t);
-        expect(out).toEqual(["hello"]);
+        expect(out).toEqual([{ type: "content", text: "hello" }]);
     });
 });
 
@@ -143,13 +166,13 @@ describe("stream", () => {
         const settings = { ...DEFAULT_SETTINGS, baseUrl: "https://api.x", apiKey: "k", model: "m" };
         const fetchSpy = vi.fn().mockResolvedValue(mkSseResponse(200, happy));
         const out: string[] = [];
-        for await (const t of stream(
+        for await (const c of stream(
             { kind: "translate", text: "hi", target: "中文" },
             settings,
             new AbortController().signal,
             fetchSpy
         )) {
-            out.push(t);
+            if (c.type === "content") out.push(c.text);
         }
         expect(out).toEqual(["你好"]);
         expect(fetchSpy).toHaveBeenCalledOnce();
@@ -168,13 +191,13 @@ describe("stream", () => {
             .mockResolvedValueOnce(mkSseResponse(429, ""))
             .mockResolvedValueOnce(mkSseResponse(200, happy));
         const out: string[] = [];
-        for await (const t of stream(
+        for await (const c of stream(
             { kind: "translate", text: "hi", target: "中文" },
             settings,
             new AbortController().signal,
             fetchSpy
         )) {
-            out.push(t);
+            if (c.type === "content") out.push(c.text);
         }
         expect(fetchSpy).toHaveBeenCalledTimes(3);
         expect(out).toEqual(["你好"]);
@@ -224,13 +247,13 @@ describe("stream", () => {
         });
         const promise = (async () => {
             const out: string[] = [];
-            for await (const t of stream(
+            for await (const c of stream(
                 { kind: "translate", text: "hi", target: "中文" },
                 settings,
                 ctrl.signal,
                 fetchSpy
             )) {
-                out.push(t);
+                if (c.type === "content") out.push(c.text);
             }
             return out;
         })();
@@ -243,13 +266,13 @@ describe("stream", () => {
         const fetchSpy = vi.fn().mockResolvedValue(mkSseResponse(200, happy));
         const ctrl = new AbortController();
         const out: string[] = [];
-        for await (const t of stream(
+        for await (const c of stream(
             { kind: "chat", system: "SYS", messages: [{ role: "user", content: "Q" }] },
             settings,
             ctrl.signal,
             fetchSpy
         )) {
-            out.push(t);
+            if (c.type === "content") out.push(c.text);
         }
         expect(out.join("")).toBe("你好");
         const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
@@ -257,5 +280,55 @@ describe("stream", () => {
             { role: "system", content: "SYS" },
             { role: "user", content: "Q" },
         ]);
+    });
+});
+
+describe("thinkingMode → request body", () => {
+    const mkSse = () => {
+        const enc = new TextEncoder();
+        const s = new ReadableStream<Uint8Array>({
+            start(c) {
+                c.enqueue(enc.encode('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n'));
+                c.close();
+            },
+        });
+        return new Response(s, { status: 200 });
+    };
+
+    const bodyFor = async (thinkingMode: string): Promise<Record<string, unknown>> => {
+        const settings = {
+            ...DEFAULT_SETTINGS,
+            baseUrl: "https://api.x",
+            apiKey: "k",
+            model: "m",
+            thinkingMode,
+        } as never;
+        const fetchSpy = vi.fn().mockResolvedValue(mkSse());
+        for await (const _ of stream(
+            { kind: "translate", text: "hi", target: "中文" },
+            settings,
+            new AbortController().signal,
+            fetchSpy
+        )) { /* drain */ }
+        return JSON.parse(fetchSpy.mock.calls[0][1].body);
+    };
+
+    it("'auto' omits the thinking field entirely", async () => {
+        const body = await bodyFor("auto");
+        expect("thinking" in body).toBe(false);
+    });
+
+    it("'off' sends thinking.type = disabled", async () => {
+        const body = await bodyFor("off");
+        expect(body.thinking).toEqual({ type: "disabled" });
+    });
+
+    it("'on' sends thinking.type = enabled", async () => {
+        const body = await bodyFor("on");
+        expect(body.thinking).toEqual({ type: "enabled" });
+    });
+
+    it("defaults to 'auto' so existing endpoints see an unchanged body", () => {
+        expect(DEFAULT_SETTINGS.thinkingMode).toBe("auto");
     });
 });

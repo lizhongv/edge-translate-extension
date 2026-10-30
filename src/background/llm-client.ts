@@ -1,5 +1,14 @@
 import type { ChatMessage, LLMError, Settings } from "../shared/types";
 
+/**
+ * One unit of a streamed reply. Reasoning chunks carry no text: the thinking
+ * trace is deliberately dropped (it never reaches history or the cache), and
+ * only signals to the UI that the model is still thinking.
+ */
+export type StreamChunk =
+    | { type: "reasoning" }
+    | { type: "content"; text: string };
+
 export type StreamInput =
     | { kind: "translate"; text: string; target: string }
     | { kind: "chat"; system: string; messages: ChatMessage[] };
@@ -58,7 +67,7 @@ export function normalizeError(
     return { code: "unknown", message: "未知错误", retryable: false };
 }
 
-export function* parseSSEChunks(buffer: string): Generator<string> {
+export function* parseSSEChunks(buffer: string): Generator<StreamChunk> {
     const events = buffer.split(/\n\n/);
     for (const ev of events) {
         if (!ev.trim()) continue;
@@ -67,15 +76,21 @@ export function* parseSSEChunks(buffer: string): Generator<string> {
             const payload = line.slice(5).trim();
             if (payload === "[DONE]") continue;
             const parsed = JSON.parse(payload);
-            const content = parsed?.choices?.[0]?.delta?.content;
+            const delta = parsed?.choices?.[0]?.delta;
+            const content = delta?.content;
             if (typeof content === "string" && content.length > 0) {
-                yield content;
+                yield { type: "content", text: content };
+                continue;
+            }
+            const reasoning = delta?.reasoning_content;
+            if (typeof reasoning === "string" && reasoning.length > 0) {
+                yield { type: "reasoning" };
             }
         }
     }
 }
 
-export async function* streamFromResponse(response: Response): AsyncGenerator<string> {
+export async function* streamFromResponse(response: Response): AsyncGenerator<StreamChunk> {
     if (!response.body) throw new Error("response has no body");
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -109,6 +124,13 @@ const sleep = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, r
     }, { once: true });
 });
 
+// DeepSeek V4 thinking-mode switch. "auto" sends nothing at all so that
+// non-DeepSeek endpoints (OpenAI / Ollama / …) see a byte-identical body.
+const thinkingField = (mode: Settings["thinkingMode"]): { thinking?: { type: "enabled" | "disabled" } } =>
+    mode === "on" ? { thinking: { type: "enabled" } }
+    : mode === "off" ? { thinking: { type: "disabled" } }
+    : {};
+
 const buildBodyFromInput = (input: StreamInput, secondary: string, settings: Settings): string => {
     let messages: { role: "system" | "user" | "assistant"; content: string }[];
     if (input.kind === "translate") {
@@ -126,6 +148,7 @@ const buildBodyFromInput = (input: StreamInput, secondary: string, settings: Set
         model: settings.model,
         stream: true,
         temperature: settings.temperature,
+        ...thinkingField(settings.thinkingMode),
         messages,
     });
 };
@@ -178,7 +201,7 @@ export async function* stream(
     settings: Settings,
     signal: AbortSignal,
     fetchFn: FetchFn = fetch
-): AsyncGenerator<string> {
+): AsyncGenerator<StreamChunk> {
     if (!settings.apiKey) {
         throw {
             code: "auth",

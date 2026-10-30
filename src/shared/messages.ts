@@ -14,6 +14,7 @@ export const msgTaskQA = (
     payload: { task: "qa", sessionId, sourceText, messages },
 });
 
+export const msgReasoning = (): PortMessage => ({ type: "reasoning" });
 export const msgToken = (chunk: string): PortMessage => ({ type: "token", chunk });
 export const msgDone = (full: string): PortMessage => ({ type: "done", full });
 export const msgError = (error: LLMError): PortMessage => ({ type: "error", error });
@@ -35,6 +36,9 @@ export const isTaskMsg = (
     }
     return false;
 };
+
+export const isReasoningMsg = (v: unknown): v is { type: "reasoning" } =>
+    isObj(v) && v.type === "reasoning";
 
 export const isTokenMsg = (v: unknown): v is { type: "token"; chunk: string } =>
     isObj(v) && v.type === "token" && typeof v.chunk === "string";

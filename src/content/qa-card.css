@@ -121,3 +121,8 @@ textarea:disabled { opacity: 0.5; cursor: not-allowed; }
     margin-right: 4px; vertical-align: middle;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.thinking {
+    opacity: 0.6;
+    font-style: italic;
+}

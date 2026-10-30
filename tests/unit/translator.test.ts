@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { translate } from "../../src/background/translator";
 import { setSettings, getHistory } from "../../src/shared/storage";
 import { setCachedTranslation } from "../../src/background/cache";
-import type { StreamInput } from "../../src/background/llm-client";
+import type { StreamChunk, StreamInput } from "../../src/background/llm-client";
 
 const mkPort = () => {
     const messages: any[] = [];
@@ -13,6 +13,26 @@ const mkPort = () => {
 };
 
 describe("translate orchestration", () => {
+    it("reasoning chunks signal the UI but never enter the translation, cache or history", async () => {
+        await setSettings({ baseUrl: "https://x", apiKey: "k", model: "m" });
+        const { port, messages } = mkPort();
+        async function* thinking(_input: StreamInput): AsyncGenerator<StreamChunk> {
+            yield { type: "reasoning" };
+            yield { type: "reasoning" };
+            yield { type: "content", text: "你好" };
+        }
+        const streamFn = vi.fn((_input: StreamInput) => thinking(_input));
+        await translate("hello", port as any, new AbortController().signal, streamFn);
+        expect(messages).toEqual([
+            { type: "reasoning" },
+            { type: "reasoning" },
+            { type: "token", chunk: "你好" },
+            { type: "done", full: "你好" },
+        ]);
+        const h = await getHistory();
+        expect(h[0].translatedText).toBe("你好");
+    });
+
     it("cache hit → skip stream, emit done, write history", async () => {
         await setSettings({ baseUrl: "https://x", apiKey: "k", model: "m" });
         await setCachedTranslation("hello", "中文", "m", "你好");
@@ -29,9 +49,9 @@ describe("translate orchestration", () => {
     it("cache miss → calls stream, pushes tokens, then done, writes cache+history", async () => {
         await setSettings({ baseUrl: "https://x", apiKey: "k", model: "m" });
         const { port, messages } = mkPort();
-        async function* fakeStream(_input: StreamInput) {
-            yield "你";
-            yield "好";
+        async function* fakeStream(_input: StreamInput): AsyncGenerator<StreamChunk> {
+            yield { type: "content", text: "你" };
+            yield { type: "content", text: "好" };
         }
         const streamFn = vi.fn((_input: StreamInput) => fakeStream(_input));
         await translate("hello", port as any, new AbortController().signal, streamFn);
@@ -52,8 +72,8 @@ describe("translate orchestration", () => {
     it("stream throws LLMError → emits error, no history/cache write", async () => {
         await setSettings({ baseUrl: "https://x", apiKey: "k", model: "m" });
         const { port, messages } = mkPort();
-        async function* failing(_input: StreamInput) {
-            yield "你";
+        async function* failing(_input: StreamInput): AsyncGenerator<StreamChunk> {
+            yield { type: "content", text: "你" };
             throw { code: "bad_response", message: "broken", retryable: false };
         }
         const streamFn = vi.fn((_input: StreamInput) => failing(_input));

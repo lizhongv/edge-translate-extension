@@ -82,6 +82,7 @@ npm run build       # 产物输出到 dist/
 - **Base URL**：默认 `https://api.deepseek.com/v1`（DeepSeek）；OpenAI 用户改为 `https://api.openai.com/v1`
 - **API Key**：你的密钥
 - **Model**：默认 `deepseek-chat`；OpenAI 推荐 `gpt-4o-mini`
+- **思考模式**：默认 `自动`。用 DeepSeek V4 系列翻译时建议选 `关闭`（更快、更便宜）
 
 点 **「测试连接」**显示 ✅ 即配置成功。
 
@@ -158,7 +159,8 @@ npm run build       # 产物输出到 dist/
 | **Base URL** | OpenAI 兼容端点根地址。扩展会自动追加 `/chat/completions` | `https://api.deepseek.com/v1` |
 | **API Key** | 端点鉴权密钥。以 `Bearer` 形式发往后端，仅保存在本地 `storage.local`，**不参与浏览器同步** | 空（必填） |
 | **Model** | 模型名称（如 `deepseek-chat` / `gpt-4o-mini` / `qwen-plus`） | `deepseek-chat` |
-| **Temperature** | 采样温度，越低越稳定。翻译场景建议 0–0.3 | `0.2` |
+| **Temperature** | 采样温度，越低越稳定。翻译场景建议 0–0.3（**思考模式下会被模型忽略**） | `0.2` |
+| **思考模式** | 推理模型的思考开关。`自动` = 请求体不包含该字段（跟随模型默认）；`开启` / `关闭` 发送 `thinking: {type: "enabled"/"disabled"}`。详见下方说明 | `自动` |
 | **System Prompt** | 系统提示。占位符 `{{TARGET_LANG}}` / `{{SECONDARY_LANG}}` 在请求时被替换为目标语 / 反向语 | 见 [`src/shared/types.ts`](src/shared/types.ts) 中 `DEFAULT_SYSTEM_PROMPT` |
 | **自定义请求头** | JSON 对象，给所有请求附加 header。常用于自托管端点的 `X-Project-Id` 等 | `{}` |
 
@@ -192,11 +194,25 @@ npm run build       # 产物输出到 dist/
 
 备忘录数量上限沿用「历史保留上限」（`historyLimit`，默认 200 条），与翻译/问答共享同一上限。
 
+### 思考模式
+
+部分模型（如 DeepSeek V4 系列）会先输出一段思维链再给出答案。对翻译这类任务，思考会明显拖慢响应并大幅抬高输出 token 费用，因此选项页提供了手动开关：
+
+| 设置 | 请求体 | 适用场景 |
+| --- | --- | --- |
+| `自动`（默认） | 不包含 `thinking` 字段 | 跟随模型自身默认。对 OpenAI / Ollama 等不认识该字段的端点，请求体与旧版完全一致 |
+| `关闭` | `"thinking": {"type": "disabled"}` | **翻译推荐**。直接作答，延迟最低 |
+| `开启` | `"thinking": {"type": "enabled"}` | 复杂问答、需要推理的场景 |
+
+思考期间流式返回的 `reasoning_content` **不会**进入译文、历史记录或缓存；卡片会在这段时间显示「思考中…」，首个正文 token 到达时自动清除。
+
+> DeepSeek 当前的 `deepseek-chat` 是兼容别名，实际路由到 `deepseek-v4-flash` 且**默认不思考**；直接填写 `deepseek-v4-flash` / `deepseek-v4-pro` 则**默认开启思考**，此时建议把思考模式设为 `关闭`。
+
 ### 兼容端点示例
 
 | 服务商 | Base URL | 推荐 Model |
 | --- | --- | --- |
-| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
+| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat`（= `deepseek-v4-flash` 非思考） |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` |
 | Azure OpenAI | `https://<resource>.openai.azure.com/openai/deployments/<deployment>` | 部署名 |
 | Moonshot | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |

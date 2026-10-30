@@ -1,15 +1,15 @@
 import type { LLMError, Settings } from "../shared/types";
-import { msgDone, msgError, msgToken } from "../shared/messages";
+import { msgDone, msgError, msgReasoning, msgToken } from "../shared/messages";
 import { appendHistory, getSettings } from "../shared/storage";
 import { getCachedTranslation, setCachedTranslation } from "./cache";
-import { stream as defaultStream, type StreamInput } from "./llm-client";
+import { stream as defaultStream, type StreamChunk, type StreamInput } from "./llm-client";
 
 type Port = { postMessage(msg: unknown): void };
 type StreamFn = (
     input: StreamInput,
     settings: Settings,
     signal: AbortSignal
-) => AsyncGenerator<string>;
+) => AsyncGenerator<StreamChunk>;
 
 const uuid = (): string =>
     "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -45,8 +45,12 @@ export async function translate(
     let full = "";
     try {
         for await (const chunk of streamFn({ kind: "translate", text, target }, settings, signal)) {
-            full += chunk;
-            port.postMessage(msgToken(chunk));
+            if (chunk.type === "reasoning") {
+                port.postMessage(msgReasoning());
+                continue;
+            }
+            full += chunk.text;
+            port.postMessage(msgToken(chunk.text));
         }
     } catch (e) {
         const err = e as LLMError;
