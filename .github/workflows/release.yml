@@ -1,4 +1,5 @@
-name: Build and Release
+# 发布：推送 vX.Y.Z 标签时检查、构建并打包为应用商店可直接上传的 zip，发布到 GitHub Releases。
+name: Release
 
 on:
   push:
@@ -6,74 +7,53 @@ on:
       - "v*.*.*"
 
 jobs:
-  build-and-release:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: npm ci
 
-      - name: Type check
-        run: npm run typecheck
+      - name: 检查（类型、代码、测试）
+        run: npm run check
 
-      - name: Run tests
-        run: npm run test
-
-      - name: Build extension
+      - name: 构建
         run: npm run build
 
-      - name: Package dist as zip
+      - name: 打包 zip（可直接上传 Edge / Chrome 应用商店）
         run: |
           cd dist
-          zip -r ../edge-translate-extension-${GITHUB_REF_NAME}.zip .
+          zip -r "../selectlingo-${GITHUB_REF_NAME}.zip" . -x "*.map"
           cd ..
-          ls -lh edge-translate-extension-${GITHUB_REF_NAME}.zip
+          ls -lh "selectlingo-${GITHUB_REF_NAME}.zip"
 
-      - name: Generate changelog from commits
-        id: changelog
+      - name: 提取本版本更新说明
         run: |
-          PREV_TAG=$(git tag --sort=-version:refname | grep -A 1 "^${GITHUB_REF_NAME}$" | tail -n 1)
-          if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "${GITHUB_REF_NAME}" ]; then
-            RANGE=""
-            echo "First tag, listing all commits"
-          else
-            RANGE="${PREV_TAG}..${GITHUB_REF_NAME}"
-            echo "Range: $RANGE"
-          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '
+            /^## \[/ { if (found) exit; if (index($0, "[" v "]")) { found=1; next } }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
           {
-            echo "changelog<<EOF"
-            echo "## Changes"
             echo ""
-            git log --pretty=format:"- %s" $RANGE
+            echo "## 安装"
             echo ""
-            echo ""
-            echo "## Install"
-            echo ""
-            echo "1. Download \`edge-translate-extension-${GITHUB_REF_NAME}.zip\` below"
-            echo "2. Unzip it"
-            echo "3. Open \`edge://extensions/\` (or \`chrome://extensions/\`), enable Developer mode"
-            echo "4. Click 'Load unpacked' and select the unzipped folder"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+            echo "1. 下载下方 \`selectlingo-${GITHUB_REF_NAME}.zip\` 并解压"
+            echo "2. 打开 \`edge://extensions/\`（或 \`chrome://extensions/\`），开启「开发人员模式」"
+            echo "3. 点击「加载解压缩的扩展」，选择解压后的文件夹"
+          } >> RELEASE_NOTES.md
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
-          body: ${{ steps.changelog.outputs.changelog }}
-          files: edge-translate-extension-${{ github.ref_name }}.zip
-          draft: false
-          prerelease: false
+          name: 划词译问 ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          files: selectlingo-${{ github.ref_name }}.zip

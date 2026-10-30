@@ -1,0 +1,4 @@
+# 仓库内文本统一 LF，图片按二进制处理
+* text=auto eol=lf
+*.png binary
+*.ico binary

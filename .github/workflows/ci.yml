@@ -1,3 +1,4 @@
+# 持续集成：每次推送与 PR 运行类型检查、代码检查、单元测试与构建。
 name: CI
 
 on:
@@ -7,25 +8,27 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: npm ci
 
-      - name: Type check
+      - name: 类型检查
         run: npm run typecheck
 
-      - name: Run tests
+      - name: 代码检查
+        run: npm run lint
+
+      - name: 单元测试
         run: npm run test
 
-      - name: Build
+      - name: 构建
         run: npm run build

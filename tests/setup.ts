@@ -11,7 +11,7 @@ const makeStorageArea = (): StorageArea => {
     const store = new Map<string, unknown>();
     return {
         get: vi.fn((keys?: string | string[] | null) => {
-            if (keys == null) return Promise.resolve(Object.fromEntries(store));
+            if (keys === null || keys === undefined) return Promise.resolve(Object.fromEntries(store));
             const list = typeof keys === "string" ? [keys] : keys;
             const out: Record<string, unknown> = {};
             for (const k of list) if (store.has(k)) out[k] = store.get(k);

@@ -146,7 +146,7 @@ describe("answerQA error handling", () => {
         const port = makePort();
         const streamFn = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
             throw { code: "auth", message: "bad", retryable: false };
-            // eslint-disable-next-line no-unreachable
+             
             yield { type: "content", text: "x" };
         });
         const ctrl = new AbortController();
@@ -162,7 +162,7 @@ describe("answerQA error handling", () => {
         const port = makePort();
         const streamFn = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
             throw { code: "aborted", message: "已取消", retryable: false };
-            // eslint-disable-next-line no-unreachable
+             
             yield { type: "content", text: "x" };
         });
         const ctrl = new AbortController();

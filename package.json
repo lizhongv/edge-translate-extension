@@ -1,26 +1,43 @@
 {
-  "name": "fayichajian",
-  "version": "0.6.1",
-  "description": "Edge translation extension powered by OpenAI-compatible LLMs",
+  "name": "selectlingo",
+  "version": "1.0.0",
+  "description": "划词译问 SelectLingo：选中网页文字即可 AI 翻译、追问与收藏的浏览器扩展",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/lizhongv/edge-translate-extension",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lizhongv/edge-translate-extension.git"
+  },
+  "bugs": "https://github.com/lizhongv/edge-translate-extension/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "icons": "python scripts/make-icons.py",
+    "screenshots": "python scripts/screenshots.py"
   },
-  "license": "MIT",
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.33",
+    "@eslint/js": "^10.0.1",
     "@types/chrome": "^0.1.40",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.5",
+    "eslint": "^10.14.0",
+    "globals": "^17.13.0",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
     "vite": "^8.0.10",
     "vitest": "^4.1.5"
   }

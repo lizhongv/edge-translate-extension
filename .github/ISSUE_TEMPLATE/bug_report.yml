@@ -1,0 +1,49 @@
+name: 问题反馈
+description: 功能异常、界面错误或报错
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 扩展版本
+      description: 设置页左上角可查看，如 v1.0.0
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与版本
+      placeholder: Edge 130 / Chrome 130
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: 出问题的网址
+      description: 与特定网站有关时填写
+  - type: input
+    id: provider
+    attributes:
+      label: 模型服务与模型
+      placeholder: DeepSeek / deepseek-chat
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 ...
+        2. 选中 ...
+        3. 点击 ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 截图或控制台日志
+      description: 按 F12 打开控制台，筛选「划词译问」。请勿粘贴 API Key。
