@@ -1,445 +1,146 @@
 <div align="center">
 
-# 工具插件 · Edge Toolkit Extension
+<img src="docs/images/logo.png" width="96" alt="划词译问 Logo">
 
-**用左键划词调出工具栏：[翻] 一键翻译，[问] 多轮追问，[存] 保存知识 —— 让 OpenAI 兼容大模型流式响应 + 个人沉淀同时落地。**
+# 划词译问 SelectLingo
 
-[![Version](https://img.shields.io/badge/version-v0.6.1-blue.svg)](https://github.com/lizhongv/edge-translate-extension/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Manifest V3](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Tests](https://img.shields.io/badge/tests-148%20passing-brightgreen.svg)](#测试)
-[![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6.svg)](https://www.typescriptlang.org/)
+**选中网页文字，一键 AI 翻译、追问与收藏 —— 不离开当前页面，数据只存本机。**
+
+[![Version](https://img.shields.io/badge/version-1.0.0-2563EB)](CHANGELOG.md)
+[![Manifest V3](https://img.shields.io/badge/manifest-v3-4F46E5)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![Browsers](https://img.shields.io/badge/Edge%20%7C%20Chrome-supported-0EA5E9)](#-安装)
+[![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6)](tsconfig.json)
+[![License](https://img.shields.io/badge/license-MIT-16A34A)](LICENSE)
+
+[安装](#-安装) · [使用](#-使用) · [常见问题](#-常见问题) · [隐私](#-隐私与安全) · [开发](#-开发)
+
+<img src="docs/images/in-page.png" width="820" alt="划词译问：网页内划词翻译与问答">
 
 </div>
 
 ---
 
-## 目录
+## ✨ 功能
 
-- [功能特性](#功能特性)
-- [快速开始](#快速开始)
-- [使用方式](#使用方式)
-- [配置项详解](#配置项详解)
-- [已知限制](#已知限制)
-- [开发指南](#开发指南)
-- [项目结构](#项目结构)
-- [技术栈](#技术栈)
-- [测试](#测试)
-- [版本与发布](#版本与发布)
-- [路线图](#路线图)
-- [贡献](#贡献)
-- [许可证](#许可证)
+| | 功能 | 说明 |
+|---|---|---|
+| 🖱️ | **划词工具栏** | 选中文字后浮出「翻 · 问 · 存 · 设」，也支持右键菜单与快捷键 `Alt+T` |
+| 🌐 | **AI 翻译** | 流式输出，首字秒出；选中目标语言文字时自动反向翻译；同文同模型命中缓存 |
+| 💬 | **就选中内容提问** | 围绕选中段落多轮追问，会话保存在侧边栏，可随时继续 |
+| 📝 | **一键收藏** | 选中文字或 AI 回答一键存入备忘录，可搜索、编辑、导出 Markdown |
+| 🤖 | **任意模型** | 内置 DeepSeek、OpenAI、Kimi、通义千问、智谱 GLM、Ollama 预设，也支持任意 OpenAI 兼容接口 |
+| 🧠 | **思考模式** | 支持 DeepSeek V4 等模型的思考开关；推理过程不进入历史与缓存 |
+| 🔒 | **隐私优先** | 请求由浏览器直连你配置的服务，不经过任何第三方服务器；API Key 只存本机、不参与同步 |
+| 🎨 | **精致界面** | 统一设计规范，浅色 / 深色自动切换；Shadow DOM 隔离，不受网页样式干扰 |
 
----
+<table>
+  <tr>
+    <td width="62%"><img src="docs/images/options.png" alt="设置页"></td>
+    <td><img src="docs/images/sidepanel.png" alt="侧边栏"></td>
+  </tr>
+  <tr>
+    <td align="center">设置页：选择服务商即自动填好接口与模型</td>
+    <td align="center">侧边栏：翻译、问答、备忘录统一管理</td>
+  </tr>
+</table>
 
-## 功能特性
+## 📦 安装
 
-| 特性 | 说明 |
-| --- | --- |
-| 🛠️ **工具栏 4 档** | 划词后弹出 [翻] [问] [存] [设] 工具栏，每档可独立开关；[设] 一键打开设置页 |
-| 🖱️ **三种触发方式** | 划词工具栏（翻 / 问 / 存 / 设）/ 右键菜单 / `Alt+T` (翻译) `Alt+Q` (问答，可绑定) |
-| 💬 **划词问答** | 选中文本 → 点 [问] → 多轮对话；会话保存到侧边栏可重新打开继续追问 |
-| 🌊 **流式呈现** | 译文 token 级增量显示，长文也能秒看首字 |
-| 🤖 **OpenAI 兼容 API** | 支持 OpenAI、DeepSeek、Moonshot、Qwen、Ollama 等任意兼容端点 |
-| 🔄 **智能反向** | 中文输入自动翻为英文（由 prompt 完成，无需切换设置） |
-| 📝 **可配置 Prompt** | 自定义系统提示、温度、自定义请求头 |
-| 💾 **持久历史 + 缓存** | 侧边栏累积最近 200 条；同文本同模型命中缓存避免重复调用 |
-| 🛡️ **隐私优先** | API Key 仅存于本地 `storage.local`，不参与浏览器同步 |
-| ⚠️ **长文软提示** | 选中超 5000 字符弹确认，避免误操作产生大额账单 |
-| 🎯 **智能跳过** | 输入框 / `<textarea>` / contenteditable 区域不显示浮标，不打扰用户编辑 |
-| 🌗 **深色模式** | 自动跟随系统主题 |
-| 🎨 **Shadow DOM 隔离** | 浮标和卡片样式不被宿主页面 CSS 污染 |
-| 📋 **双向复制** | 复制原文 / 复制译文按钮 |
-| 📑 **侧边栏 Tab** | 翻译历史 / 问答会话 / 备忘录 三 Tab；问答 Session 可点入查看完整对话并继续 |
-| 📝 **划词知识收藏** | 工具栏 [存] / QA 答案「保存到备忘录」/ 右键菜单 三入口；本地保存可搜索可编辑 |
+### 从 Releases 安装（推荐）
 
----
+1. 在 [Releases](https://github.com/lizhongv/edge-translate-extension/releases/latest) 下载 `selectlingo-vX.Y.Z.zip` 并解压。
+2. 打开 `edge://extensions/`（Chrome 为 `chrome://extensions/`），开启 **开发人员模式**。
+3. 点击 **加载解压缩的扩展**，选择解压后的文件夹。
+4. 安装后自动打开欢迎页，按引导完成配置。
 
-## 快速开始
-
-### 1. 克隆并构建
+### 从源码构建
 
 ```bash
-git clone git@github.com:lizhongv/edge-translate-extension.git
+git clone https://github.com/lizhongv/edge-translate-extension.git
 cd edge-translate-extension
-npm install
-npm run build       # 产物输出到 dist/
+npm ci
+npm run build        # 产物在 dist/，按上面第 2～3 步加载 dist 目录
 ```
 
-> 需要 Node.js ≥ 18。
+> 需要 Node.js 20 及以上。
 
-### 2. 加载扩展
+## 🚀 使用
 
-1. 在 Edge 中打开 `edge://extensions/`（Chrome 用户访问 `chrome://extensions/`）
-2. 右上角启用 **「开发人员模式」**
-3. 点击 **「加载解压缩的扩展」**，选择 `dist/` 目录
-4. 工具栏出现「翻译」图标即安装成功
+**第一步：配置模型（只需一次）**
+设置页选择服务商 → 填写 API Key（点「获取 API Key」到官网申请）→ 点 **测试连接** → **保存设置**。
 
-### 3. 配置 API
+**第二步：在任意网页选中文字**
 
-右键扩展图标 → **「选项」**，至少填入：
+| 操作 | 方式 |
+|---|---|
+| 翻译 | 点工具栏「翻」，或右键「划词译问 → 翻译选中内容」，或按 `Alt+T` |
+| 提问 | 点「问」，在卡片中多轮追问；会话保存在侧边栏「问答」 |
+| 收藏 | 点「存」，或在 AI 回答下点「保存到备忘录」 |
+| 查看记录 | 点浏览器工具栏中的扩展图标，打开侧边栏 |
 
-- **Base URL**：默认 `https://api.deepseek.com/v1`（DeepSeek）；OpenAI 用户改为 `https://api.openai.com/v1`
-- **API Key**：你的密钥
-- **Model**：默认 `deepseek-chat`；OpenAI 推荐 `gpt-4o-mini`
-- **思考模式**：默认 `自动`。用 DeepSeek V4 系列翻译时建议选 `关闭`（更快、更便宜）
+快捷键可在 `edge://extensions/shortcuts` 修改，问答快捷键可自行绑定。
 
-点 **「测试连接」**显示 ✅ 即配置成功。
+## ❓ 常见问题
 
-### 4. 开始翻译
+<details>
+<summary><b>需要付费吗？</b></summary>
 
-任意网页上左键划选一段文字 → 点击右下角的蓝色「翻」字浮标 → 译文流式呈现。
+扩展本身免费、开源。翻译与问答调用的是你自己的模型服务，按服务商的价格计费；DeepSeek、智谱 glm-4-flash 成本很低，本地 Ollama 完全免费。选中超长文字时会先提醒确认，避免误操作产生费用。
+</details>
 
----
+<details>
+<summary><b>提示「API Key 无效」或连接失败？</b></summary>
 
-## 使用方式
+在设置页点「测试连接」查看具体原因：确认接口地址与服务商一致、Key 没有多余空格、账户有余额。OpenAI 在国内网络通常需要代理。
+</details>
 
-三种触发方式可同时使用，按需选择：
+<details>
+<summary><b>某些网页选中后没有工具栏？</b></summary>
 
-### 1. 划词浮标（默认）
+- 浏览器内置页面（`edge://`、扩展商店等）禁止扩展运行。
+- 输入框、可编辑区域中不会出现工具栏，以免打扰输入。
+- 网站禁止选中文字时，可在设置「高级」中开启「强制页面文字可选」，刷新页面后生效。
+- 浏览器内置 PDF 阅读器、canvas 渲染的文字暂不支持。
+</details>
 
-```
-[原文 hello world]   ← 拖选文字，鼠标松开
-              [翻]   ← 选区右下角出现蓝色按钮，单击触发
-```
+<details>
+<summary><b>数据保存在哪里？换电脑会同步吗？</b></summary>
 
-- 在 `<input>`、`<textarea>`、contenteditable 区域**不会**出现，避免打扰编辑
-- 选区清空 / 滚动 / 点击其他地方 → 自动消失
-- 在选项页可一键关闭（关闭后右键和快捷键仍可用）
+历史、问答、备忘录与 API Key 只保存在本机浏览器。非敏感的偏好设置（语言、开关等）会随浏览器账号同步，API Key 与自定义请求头不会同步。
+</details>
 
-### 2. 右键菜单
+## 🔐 隐私与安全
 
-划选文字 → **右键** → 点击「翻译选中内容」
+- **无服务器**：扩展没有后端，不收集、不上传任何数据；划词内容只发送给你自己配置的模型服务。
+- **本机存储**：API Key、历史、备忘录保存在 `chrome.storage.local`，卸载扩展即全部清除。
+- **最小打扰**：内容脚本只在你选中文字并点击按钮时才发起请求。
 
-### 3. 全局快捷键
+完整说明见 [隐私政策](PRIVACY.md)，安全问题请按 [SECURITY.md](SECURITY.md) 报告。
 
-划选文字 → 按 **`Alt+T`** 即可触发。可在 `edge://extensions/shortcuts` 修改。
-
-### 翻译卡片操作
-
-译文呈现后底部按钮：
-
-- **复制原文**：复制选中的源文本
-- **复制译文**：复制翻译结果
-- **关闭**：关闭卡片
-
-### 侧边栏历史
-
-点击工具栏「翻译」图标打开侧边栏，可见全部历史，每条提供：
-
-- 复制原文 / 复制译文 / 删除单条 / 清空全部
-
-### 划词问答
-
-1. 选中网页上的一段文字
-2. 点击工具栏中的 **[问]** 按钮（或右键 → 「问答选中内容」）
-3. 在弹出卡片中输入问题，按 `Enter` 发送（`Shift+Enter` 换行）
-4. AI 流式回答；可继续追问，对话上下文自动维护
-5. 关闭卡片后，会话保存到侧边栏「问答」Tab，可重新打开继续
-
-> 默认保留最近 6 轮对话作为上下文（可在设置中调整 `qaMaxTurns`）。
-
-### 划词知识收藏
-
-1. 选中网页文字 → 点工具栏 **[存]**（或右键 → 「保存选中到备忘录」）
-2. 右上角 toast 提示「已保存 ✓」，点「打开」直接跳转侧边栏「备忘录」Tab
-3. 在 QA 答案下也可点「保存到备忘录」→ AI 回复 + 原文一并存入
-4. 侧边栏「备忘录」Tab 看全部，支持搜索（标题+正文）、编辑（修改标题或正文）、删除
-
----
-
-## 配置项详解
-
-打开扩展选项页，所有字段均可调整：
-
-### LLM 接口
-
-| 字段 | 说明 | 默认值 |
-| --- | --- | --- |
-| **Base URL** | OpenAI 兼容端点根地址。扩展会自动追加 `/chat/completions` | `https://api.deepseek.com/v1` |
-| **API Key** | 端点鉴权密钥。以 `Bearer` 形式发往后端，仅保存在本地 `storage.local`，**不参与浏览器同步** | 空（必填） |
-| **Model** | 模型名称（如 `deepseek-chat` / `gpt-4o-mini` / `qwen-plus`） | `deepseek-chat` |
-| **Temperature** | 采样温度，越低越稳定。翻译场景建议 0–0.3（**思考模式下会被模型忽略**） | `0.2` |
-| **思考模式** | 推理模型的思考开关。`自动` = 请求体不包含该字段（跟随模型默认）；`开启` / `关闭` 发送 `thinking: {type: "enabled"/"disabled"}`。详见下方说明 | `自动` |
-| **System Prompt** | 系统提示。占位符 `{{TARGET_LANG}}` / `{{SECONDARY_LANG}}` 在请求时被替换为目标语 / 反向语 | 见 [`src/shared/types.ts`](src/shared/types.ts) 中 `DEFAULT_SYSTEM_PROMPT` |
-| **自定义请求头** | JSON 对象，给所有请求附加 header。常用于自托管端点的 `X-Project-Id` 等 | `{}` |
-
-### 翻译方向
-
-| 字段 | 说明 | 默认值 |
-| --- | --- | --- |
-| **主目标语** | 默认翻译目标 | `中文` |
-| **反向目标语** | 当输入本身已是主目标语时改用的目标 | `English` |
-
-### 行为
-
-| 字段 | 说明 | 默认值 |
-| --- | --- | --- |
-| **长文阈值** | 单次选区超过该字符数时弹出确认 | `5000` |
-| **历史条数上限** | 本地保留多少条历史，超出后按时间淘汰 | `200` |
-| **启用划词浮标** | 划词后是否在选区右下角显示一键翻译按钮 | `true` |
-| **强制页面可选** | 覆盖站点 `user-select: none`，让禁复制的页面也能划词。可能让站点拖动 / 选区类按钮变得可选。**设置后需刷新页面生效**。 | `false` |
-| 快捷键（仅展示） | 全局快捷键，实际修改入口在 `edge://extensions/shortcuts` | `Alt+T` |
-
-### 问答（QA）
-
-- **启用问答按钮** (`enableQA`)：默认开启。关闭后工具栏只显示 [翻]。
-- **问答系统提示词** (`qaSystemPrompt`)：默认提示模型基于选中文本回答问题，输出纯文本，与用户语种一致。可改为更专业的提示，例如「请用代码示例解释」「请按学术论文风格回答」。
-- **多轮上限** (`qaMaxTurns`)：默认 6（即最近 6 轮 = 12 条消息）。超出后自动丢弃最早一对。范围 1-20。
-
-### 备忘录
-
-- **启用 [存] 按钮** (`enableMemo`)：默认开。关闭后工具栏不显示 [存]。
-- **启用 [设] 按钮** (`enableSettingsButton`)：默认开。关闭后工具栏不显示 [设]（仍可通过右键扩展图标进入设置页）。
-
-备忘录数量上限沿用「历史保留上限」（`historyLimit`，默认 200 条），与翻译/问答共享同一上限。
-
-### 思考模式
-
-部分模型（如 DeepSeek V4 系列）会先输出一段思维链再给出答案。对翻译这类任务，思考会明显拖慢响应并大幅抬高输出 token 费用，因此选项页提供了手动开关：
-
-| 设置 | 请求体 | 适用场景 |
-| --- | --- | --- |
-| `自动`（默认） | 不包含 `thinking` 字段 | 跟随模型自身默认。对 OpenAI / Ollama 等不认识该字段的端点，请求体与旧版完全一致 |
-| `关闭` | `"thinking": {"type": "disabled"}` | **翻译推荐**。直接作答，延迟最低 |
-| `开启` | `"thinking": {"type": "enabled"}` | 复杂问答、需要推理的场景 |
-
-思考期间流式返回的 `reasoning_content` **不会**进入译文、历史记录或缓存；卡片会在这段时间显示「思考中…」，首个正文 token 到达时自动清除。
-
-> DeepSeek 当前的 `deepseek-chat` 是兼容别名，实际路由到 `deepseek-v4-flash` 且**默认不思考**；直接填写 `deepseek-v4-flash` / `deepseek-v4-pro` 则**默认开启思考**，此时建议把思考模式设为 `关闭`。
-
-### 兼容端点示例
-
-| 服务商 | Base URL | 推荐 Model |
-| --- | --- | --- |
-| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat`（= `deepseek-v4-flash` 非思考） |
-| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` |
-| Azure OpenAI | `https://<resource>.openai.azure.com/openai/deployments/<deployment>` | 部署名 |
-| Moonshot | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
-| Qwen / DashScope | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` |
-| Ollama 本地 | `http://localhost:11434/v1` | 本地模型名（如 `qwen2.5:7b`） |
-
----
-
-## 已知限制
-
-- **PDF.js**：浏览器内置 PDF 阅读器中的文字选区在不同版本下行为不稳定，可能无法触发或拿到错误的范围。
-- **跨 iframe**：跨多个 iframe 的选区无法翻译；只有当选区完整位于同一文档内时才生效。
-- **受限页面**：`chrome://`、`edge://`、扩展商店、`view-source:` 等页面禁止注入内容脚本，不可用。会显示通知"无法在此页面翻译"。
-- **快捷键全局生效**：`Alt+T` 在所有标签页中可触发；可能与某些网站冲突。修改入口：`edge://extensions/shortcuts`。
-- **流式取消**：网络层取消依赖 `AbortController`，部分代理 / 网关可能在已发送 token 后无法立即中断。
-- **选项页首次加载延迟**：当 `chrome.storage.sync` 因 Edge 同步异常无法返回时，会有最多 1.5 秒延迟（已加超时降级，不会卡住）。
-
----
-
-## 开发指南
-
-### 环境要求
-
-- Node.js ≥ 18
-- npm（或兼容包管理器）
-- Edge / Chrome（用于加载未打包扩展）
-
-### 常用命令
+## 🛠 开发
 
 | 命令 | 说明 |
-| --- | --- |
-| `npm install` | 安装依赖 |
-| `npm run dev` | Vite + CRXJS 开发模式，启用 HMR；产物写入 `dist/`，加载该目录到浏览器即可热更新 |
-| `npm run build` | 生产构建，输出到 `dist/` |
-| `npm run test` | Vitest 单元测试（共 148 条） |
-| `npm run test:watch` | Vitest 监视模式 |
-| `npm run test:coverage` | 测试 + 覆盖率报告 |
-| `npm run typecheck` | `tsc --noEmit`，仅做类型检查 |
+|---|---|
+| `npm run dev` | 开发模式（热更新），加载 `dist/` 调试 |
+| `npm run build` | 生产构建 |
+| `npm run check` | 类型检查 + 代码检查 + 单元测试 |
+| `npm run icons` | 重新生成图标（Python + Pillow） |
+| `npm run screenshots` | 用演示数据渲染各界面截图（需先 build，Windows + Edge） |
 
-### 开发流程
+- 架构说明：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- 开发规范：[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- 应用商店上架素材：[docs/STORE_LISTING.md](docs/STORE_LISTING.md)
 
-1. `git checkout -b feat/your-feature`
-2. 修改代码（推荐在 `feat/*` 分支按 TDD 节奏：先写测试 → 跑失败 → 写实现 → 跑通过 → 提交）
-3. `npm run typecheck && npm run test && npm run build` 全部通过
-4. 在 `edge://extensions/` 上重新加载扩展验证
-5. 提交 PR
+## 🗺 路线图
 
-### Windows 特别说明
-
-构建时如遇 `EPERM dist/icons` 错误，是 Edge 加载扩展时锁住了图标文件。本项目的 `vite.config.ts` 已加入 `tolerantClean` 自定义插件绕过该问题，无需手动卸载扩展。
-
----
-
-## 项目结构
-
-```
-edge-translate-extension/
-├── src/
-│   ├── manifest.ts                # CRXJS 类型化 manifest
-│   ├── shared/                    # 跨入口共用代码
-│   │   ├── types.ts                 # Settings / HistoryItem / 消息协议 / 默认值
-│   │   ├── messages.ts              # 类型化消息构造与守卫
-│   │   ├── storage.ts               # chrome.storage 类型化封装（含超时降级）
-│   │   ├── lang.ts                  # CJK 占比检测（仅供历史展示）
-│   │   ├── toast.ts                 # 新增 v0.5.0
-│   │   └── toast.css                # 新增 v0.5.0
-│   ├── background/                # Service Worker（MV3）
-│   │   ├── service-worker.ts        # 入口：菜单 / 快捷键 / Port 生命周期
-│   │   ├── translator.ts            # 翻译编排：缓存 + 流式 + 历史落库
-│   │   ├── llm-client.ts            # SSE 解析、重试退避、错误归一化
-│   │   └── cache.ts                 # SHA-1 键控的翻译缓存
-│   ├── content/                   # 内容脚本
-│   │   ├── index.ts                 # 入口：监听 mouseup/selectionchange/scroll/mousedown
-│   │   ├── selection.ts             # 选中文本 / 包围矩形
-│   │   ├── floating-card.ts         # Shadow DOM 浮动卡片（流式渲染）
-│   │   ├── card.css
-│   │   ├── toolbar.ts               # Shadow DOM 划词工具栏（翻 / 问 按钮）
-│   │   ├── toolbar.css
-│   │   ├── qa-card.ts               # Shadow DOM 问答卡片（多轮对话）
-│   │   ├── qa-card.css
-│   │   └── dom-utils.ts             # isInEditable 等 DOM 辅助
-│   ├── sidepanel/                 # 侧边栏（历史视图）
-│   │   ├── index.html
-│   │   ├── index.ts
-│   │   └── sidepanel.css
-│   ├── options/                   # 选项页（设置）
-│   │   ├── index.html
-│   │   ├── index.ts                 # 表单读写 + 测试连接按钮
-│   │   └── options.css
-│   └── types/
-│       └── css.d.ts                 # Vite ?inline CSS 模块声明
-├── tests/
-│   ├── setup.ts                   # chrome.* mock + webcrypto polyfill
-│   └── unit/                      # Vitest 单元测试（148 条）
-├── public/
-│   └── icons/                     # 16/32/48/128 PNG（翻译主题）
-├── docs/superpowers/
-│   ├── specs/                     # 设计文档
-│   └── plans/                     # 实施计划
-├── vite.config.ts                 # 含 tolerantClean 自定义插件
-├── tsconfig.json                  # TS 严格模式
-└── vitest.config.ts
-```
-
----
-
-## 技术栈
-
-- **TypeScript** strict 模式
-- **Vite 8** + [`@crxjs/vite-plugin`](https://crxjs.dev/) — MV3 manifest 类型化生成 + HMR
-- **Manifest V3** — Service Worker、Side Panel、Shadow DOM
-- **Vitest** + jsdom — 单元测试
-- **原生 DOM + Shadow DOM** — 不引入 React/Vue/Lit，保持 content script 体积最小
-
-详细技术决策见 [`docs/superpowers/specs/`](docs/superpowers/specs/) 中的设计文档。
-
----
-
-## 测试
-
-```bash
-npm run test              # 148 个单元测试
-npm run test:coverage     # 含覆盖率报告
-```
-
-测试范围：
-- `shared/lang.ts` — CJK 占比计算（9 用例）
-- `shared/messages.ts` — 消息构造器与类型守卫（9 用例）
-- `shared/storage.ts` — 设置 / 历史 / 缓存的类型化封装（12 用例）
-- `background/cache.ts` — SHA-1 键控缓存（7 用例）
-- `background/llm-client.ts` — 错误归一化 / SSE 解析 / 流式 + 重试（20 用例）
-- `background/translator.ts` — 翻译编排（4 用例）
-- `content/selection.ts` — 选区辅助（3 用例）
-- `content/toolbar.ts` — 划词工具栏（翻 / 问 按钮）（含 isInEditable）
-- `background/qa.ts` — 问答会话编排（新增）
-- `shared/memo-storage.ts` — 备忘录存储（新增 v0.5.0）
-- `shared/toast.ts` — Toast 通知组件（新增 v0.5.0）
-
-UI 模块（FloatingCard、sidepanel、options 页）由手动验收覆盖。
-
----
-
-## 版本与发布
-
-### v0.6.1 (2026-05-08)
-
-- **站点兼容性修复**：
-  - 事件监听切到 capture 阶段，绕过站点 `stopPropagation` 拦截（zhihu pin、jishuzhan 等之前不工作的站点现可用）
-  - manifest 加 `all_frames: true`，工具栏在跨域 iframe 内也能出现
-  - 新增「强制页面可选」设置（默认关）：覆盖站点的 `user-select: none`，需刷新页面生效
-- **已知未修**：站点用 `document.write` 重写整页、整页包在 closed Shadow DOM 内、canvas 渲染文字 — 这三类仍无法工作
-- 测试覆盖：148 个单元测试（无变化）
-
-### v0.6.0 (2026-05-08)
-
-- **更名**：「翻译插件」→「工具插件」，包括用户可见与开发者可见的所有字面量
-- **备忘录导出**：侧边栏「备忘录」Tab 加「导出」按钮，一键下载所有（或当前过滤后的）备忘录为 `memos-YYYY-MM-DD.md`
-- 测试覆盖：148 个单元测试（含新增 sidepanel-export 测试文件）
-
-### v0.5.0 (2026-05-08)
-
-- 新增划词知识收藏（备忘录）：工具栏 [存] 按钮 + QA 答案「保存到备忘录」+ 右键菜单 三入口
-- 新增侧边栏「备忘录」Tab：列表 + 搜索（标题+正文）+ 详情编辑 + 删除
-- 工具栏新增 [设] 按钮：一键打开设置页
-- QA 答案对齐翻译卡片：每条 AI 气泡含「复制原文 / 复制答案 / 保存到备忘录」三按钮
-- 通用 Toast 组件（Shadow DOM 单例）：右上角 2 秒淡出，可点跳侧边栏
-- 测试覆盖：148 个单元测试（含新增 memo-storage / toast / sidepanel-export 测试文件）
-
-| 版本 | 主要内容 |
-| --- | --- |
-| [`v0.6.1`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.6.1) | 站点兼容性修复：capture 阶段监听 + iframe 注入 + 可选「强制页面可选」 |
-| [`v0.6.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.6.0) | 更名「翻译插件」→「工具插件」；备忘录导出（`memos-YYYY-MM-DD.md`）；148 个单元测试 |
-| [`v0.5.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.5.0) | 新增备忘录：工具栏 [存] + QA 「保存到备忘录」+ 右键菜单三入口；侧边栏备忘录 Tab；工具栏 [设] 按钮；通用 Toast 组件；143 个单元测试（当时） |
-| [`v0.4.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.4.0) | 划词浮标升级为工具栏 [翻][问]；新增划词问答（多轮对话 + 会话持久化）；侧边栏新增「问答」Tab；设置新增 enableQA / qaSystemPrompt / qaMaxTurns；右键菜单新增「问答选中内容」；120 个单元测试 |
-| [`v0.3.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.3.0) | 划词浮标触发器（蓝底白「翻」字）；浮动卡片 + 侧边栏双向复制（原文 / 译文） |
-| [`v0.2.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.2.0) | 右键菜单 + Alt+T 全链路稳定；DeepSeek 默认；选项页对比度优化；Windows 构建容错 |
-| [`v0.1.0`](https://github.com/lizhongv/edge-translate-extension/releases/tag/v0.1.0) | 初始 MVP：右键菜单 + 流式翻译 + 历史 + 选项页 |
-
-每个 tag 推送后由 GitHub Actions 自动构建并上传 `dist.zip` 到对应 Release，供非开发者下载安装。
-
----
-
-## 路线图
-
-- ✅ **v0.4.0 划词问答**（已完成）
-- ✅ **v0.5.0 划词知识收藏**（已完成）
-- ✅ **v0.6.0 更名 + 备忘录导出**（已完成）
-- ✅ **v0.6.1 站点兼容性修复**（已完成）
-- ⏳ **v0.7.0 备忘录整理增强 + 沉淀工具**（手动标签 / 按来源归组 / 跨设备同步 / LLM 自动整理）
-- [ ] PDF.js 阅读器内选区翻译
 - [ ] 整页翻译（双语对照）
-- [ ] 长文自动分段并行翻译
-- [ ] 多套 LLM 配置切换（一键在 OpenAI / DeepSeek 等之间切换）
-- [ ] 自定义术语表 / 翻译记忆
+- [ ] 多套模型配置一键切换
+- [ ] 自定义术语表
+- [ ] 备忘录标签与分组
+- [ ] 浏览器内置 PDF 阅读器划词
 
-欢迎在 [Issues](https://github.com/lizhongv/edge-translate-extension/issues) 提需求。
+欢迎在 [Issues](https://github.com/lizhongv/edge-translate-extension/issues) 提建议，贡献方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
----
+## 📄 许可证
 
-## 贡献
-
-欢迎 PR。提交流程：
-
-1. Fork 本仓库并克隆到本地
-2. 创建特性分支：`git checkout -b feat/awesome-thing`
-3. 先写测试再写实现（TDD）
-4. 确保 `npm run typecheck && npm run test && npm run build` 全部通过
-5. 在 Edge 中重新加载扩展，按 [使用方式](#使用方式) 章节自测
-6. 提交并发起 PR；请关联相关 Issue 编号
-
-代码风格：
-- TypeScript strict
-- 中文 commit message 可接受；推荐使用 [Conventional Commits](https://www.conventionalcommits.org/)：`feat:` / `fix:` / `docs:` / `test:` / `build:` / `chore:` / `perf:`
-- 不引入 React / Vue / Lit / 大型 UI 框架（content script 体积优先）
-
----
-
-## 许可证
-
-[MIT](LICENSE) © 2026 lizhongv
-
----
-
-<div align="center">
-
-如果这个项目帮到你，欢迎 ⭐ Star。
-
-报告问题 · [Issues](https://github.com/lizhongv/edge-translate-extension/issues) | 讨论 · [Discussions](https://github.com/lizhongv/edge-translate-extension/discussions)
-
-</div>
+[MIT](LICENSE) —— 可免费用于个人与商业用途。
