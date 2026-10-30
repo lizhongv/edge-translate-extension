@@ -1,3 +1,4 @@
+import tokensCss from "./tokens.css?inline";
 import toastCss from "./toast.css?inline";
 
 type ToastOptions = {
@@ -30,7 +31,7 @@ export function showToast(message: string, options: ToastOptions = {}): void {
     (window as unknown as { __lastToastRoot?: ShadowRoot }).__lastToastRoot = root;
 
     const style = document.createElement("style");
-    style.textContent = toastCss;
+    style.textContent = tokensCss + toastCss;
     root.appendChild(style);
 
     const toast = document.createElement("div");

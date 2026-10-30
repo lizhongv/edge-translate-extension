@@ -1,5 +1,11 @@
+/**
+ * 设置页：表单读写、服务商预设、连接测试、未保存提醒、首次安装欢迎引导、导航联动。
+ * 表单字段与 Settings 一一对应，读写只经过 fillForm / readForm 两个函数。
+ */
 import { getSettings, setSettings } from "../shared/storage";
 import { stream } from "../background/llm-client";
+import { LINKS } from "../shared/constants";
+import { CUSTOM_PROVIDER_ID, PROVIDERS, detectProvider, getProvider } from "../shared/providers";
 import type { Settings } from "../shared/types";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -25,6 +31,16 @@ const inputs = {
     forceSelectable: $<HTMLInputElement>("forceSelectable"),
 };
 
+const saveBtn = $<HTMLButtonElement>("save");
+const saveResult = $<HTMLSpanElement>("saveResult");
+const testBtn = $<HTMLButtonElement>("testConn");
+const testResult = $<HTMLSpanElement>("testResult");
+const dirtyHint = $<HTMLSpanElement>("dirtyHint");
+const providerGrid = $<HTMLDivElement>("providerGrid");
+const providerHint = $<HTMLParagraphElement>("providerHint");
+const keyLink = $<HTMLAnchorElement>("keyLink");
+
+// ===== 表单读写 =====
 function fillForm(s: Settings): void {
     inputs.baseUrl.value = s.baseUrl;
     inputs.apiKey.value = s.apiKey;
@@ -47,16 +63,16 @@ function fillForm(s: Settings): void {
 }
 
 function readForm(): Partial<Settings> {
-    let headers: Record<string, string> = {};
+    let headers: Record<string, string>;
     try {
         const v = inputs.customHeaders.value.trim();
         headers = v ? JSON.parse(v) : {};
     } catch {
-        throw new Error("自定义请求头不是合法 JSON");
+        throw new Error("自定义请求头不是合法的 JSON");
     }
     return {
         baseUrl: inputs.baseUrl.value.trim(),
-        apiKey: inputs.apiKey.value,
+        apiKey: inputs.apiKey.value.trim(),
         model: inputs.model.value.trim(),
         temperature: Number(inputs.temperature.value) || 0.2,
         thinkingMode: inputs.thinkingMode.value as Settings["thinkingMode"],
@@ -76,23 +92,102 @@ function readForm(): Partial<Settings> {
     };
 }
 
-$<HTMLButtonElement>("save").addEventListener("click", async () => {
-    const result = $<HTMLSpanElement>("saveResult");
-    try {
-        const patch = readForm();
-        await setSettings(patch);
-        result.textContent = "已保存";
-    } catch (e) {
-        result.textContent = (e as Error).message;
+// ===== 状态提示 =====
+type Tone = "ok" | "err" | "busy" | "";
+function setStatus(el: HTMLElement, text: string, tone: Tone): void {
+    el.textContent = text;
+    el.className = `status ${tone}`.trim();
+}
+
+let dirty = false;
+function setDirty(v: boolean): void {
+    dirty = v;
+    dirtyHint.hidden = !v;
+    if (v) setStatus(saveResult, "", "");
+}
+
+// ===== 服务商预设 =====
+function renderProviders(): void {
+    const items = [...PROVIDERS, { id: CUSTOM_PROVIDER_ID, name: "自定义", baseUrl: "任意 OpenAI 兼容接口" }];
+    for (const p of items) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "provider";
+        btn.dataset.id = p.id;
+        btn.setAttribute("role", "radio");
+        const name = document.createElement("b");
+        name.textContent = p.name;
+        const url = document.createElement("small");
+        url.textContent = p.baseUrl.replace(/^https?:\/\//, "");
+        btn.append(name, url);
+        btn.addEventListener("click", () => selectProvider(p.id, true));
+        providerGrid.appendChild(btn);
     }
+}
+
+/** fill 为 true 时用预设覆盖接口地址与模型（用户点选）；为 false 只更新高亮与提示（回显）。 */
+function selectProvider(id: string, fill: boolean): void {
+    providerGrid.querySelectorAll<HTMLButtonElement>(".provider").forEach(b => {
+        b.setAttribute("aria-checked", String(b.dataset.id === id));
+    });
+    const p = getProvider(id);
+    if (!p) {
+        providerHint.textContent = "填写任意 OpenAI 兼容接口的地址与模型名。";
+        keyLink.hidden = true;
+        return;
+    }
+    providerHint.textContent = p.hint;
+    keyLink.hidden = !p.keyUrl;
+    if (p.keyUrl) keyLink.href = p.keyUrl;
+    if (fill) {
+        inputs.baseUrl.value = p.baseUrl;
+        inputs.model.value = p.model;
+        if (!p.needsKey && !inputs.apiKey.value) inputs.apiKey.value = "ollama";
+        setDirty(true);
+        setStatus(testResult, "", "");
+    }
+}
+
+inputs.baseUrl.addEventListener("input", () => selectProvider(detectProvider(inputs.baseUrl.value), false));
+
+$<HTMLButtonElement>("toggleKey").addEventListener("click", (e) => {
+    const show = inputs.apiKey.type === "password";
+    inputs.apiKey.type = show ? "text" : "password";
+    (e.currentTarget as HTMLButtonElement).textContent = show ? "隐藏" : "显示";
 });
 
-$<HTMLButtonElement>("testConn").addEventListener("click", async () => {
-    const result = $<HTMLSpanElement>("testResult");
-    result.textContent = "测试中…";
+// ===== 保存 =====
+async function save(): Promise<void> {
     try {
-        const patch = readForm();
-        const settings: Settings = { ...(await getSettings()), ...patch };
+        await setSettings(readForm());
+        setDirty(false);
+        setStatus(saveResult, "✓ 已保存", "ok");
+        if (inputs.apiKey.value) $<HTMLElement>("welcome").hidden = true;   // 配置完成后收起引导
+    } catch (e) {
+        setStatus(saveResult, (e as Error).message, "err");
+    }
+}
+
+saveBtn.addEventListener("click", () => void save());
+document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void save();
+    }
+});
+document.querySelector("main")?.addEventListener("input", (e) => {
+    if ((e.target as HTMLElement).matches("input, textarea, select")) setDirty(true);
+});
+window.addEventListener("beforeunload", (e) => {
+    if (dirty) e.preventDefault();
+});
+
+// ===== 测试连接 =====
+testBtn.addEventListener("click", async () => {
+    testBtn.disabled = true;
+    setStatus(testResult, "正在连接…", "busy");
+    try {
+        const settings: Settings = { ...(await getSettings()), ...readForm() };
         const t0 = performance.now();
         const ctrl = new AbortController();
         let token = "";
@@ -100,7 +195,7 @@ $<HTMLButtonElement>("testConn").addEventListener("click", async () => {
         for await (const c of stream({ kind: "translate", text: "hi", target: "中文" }, settings, ctrl.signal)) {
             if (c.type === "reasoning") {
                 sawReasoning = true;
-                result.textContent = "思考中…";
+                setStatus(testResult, "模型思考中…", "busy");
                 continue;
             }
             token += c.text;
@@ -111,14 +206,45 @@ $<HTMLButtonElement>("testConn").addEventListener("click", async () => {
         }
         const dt = Math.round(performance.now() - t0);
         const thinkNote = sawReasoning ? "，思考模式已开启" : "";
-        result.textContent = `✅ ${settings.model} 响应正常 (${dt}ms)${thinkNote}`;
+        setStatus(testResult, `✓ 连接正常：${settings.model}，首字 ${dt} ms${thinkNote}`, "ok");
     } catch (e) {
-        const err = e as { code?: string; message?: string };
-        result.textContent = `❌ ${err.message ?? "未知错误"}`;
+        const err = e as { message?: string };
+        setStatus(testResult, `✕ ${err.message ?? "未知错误"}`, "err");
+    } finally {
+        testBtn.disabled = false;
     }
 });
 
+// ===== 快捷键、关于 =====
+$<HTMLButtonElement>("openShortcuts").addEventListener("click", () => {
+    void chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+});
+$<HTMLElement>("version").textContent = `v${chrome.runtime.getManifest().version}`;
+$<HTMLAnchorElement>("lnkPrivacy").href = LINKS.privacy;
+$<HTMLAnchorElement>("lnkChangelog").href = LINKS.changelog;
+$<HTMLAnchorElement>("lnkIssues").href = LINKS.issues;
+$<HTMLAnchorElement>("lnkRepo").href = LINKS.repo;
+
+// ===== 导航随滚动高亮 =====
+const navLinks = [...document.querySelectorAll<HTMLAnchorElement>(".nav a")];
+const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        navLinks.forEach(a => a.classList.toggle("active", a.getAttribute("href") === `#${entry.target.id}`));
+    }
+}, { rootMargin: "-20% 0px -70% 0px" });
+document.querySelectorAll("main .card").forEach(sec => observer.observe(sec));
+
+// ===== 初始化 =====
 void (async () => {
+    renderProviders();
     const s = await getSettings();
     fillForm(s);
+    selectProvider(detectProvider(s.baseUrl), false);
+    // 首次安装（#welcome）或尚未配置 API Key 时显示欢迎引导
+    if (location.hash === "#welcome" || !s.apiKey) {
+        $<HTMLElement>("welcome").hidden = false;
+        if (!s.apiKey) inputs.apiKey.focus();
+    }
+    setDirty(false);
 })();

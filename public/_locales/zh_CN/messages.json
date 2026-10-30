@@ -1,0 +1,8 @@
+{
+    "appName": { "message": "划词译问 - AI 划词翻译与问答" },
+    "appShortName": { "message": "划词译问" },
+    "appDescription": { "message": "选中网页文字，一键 AI 翻译、追问与收藏。支持 DeepSeek、OpenAI、Kimi、通义千问等任意 OpenAI 兼容模型，数据只存本机。" },
+    "actionTitle": { "message": "划词译问：打开侧边栏" },
+    "cmdTranslate": { "message": "翻译选中文字" },
+    "cmdQA": { "message": "就选中文字提问" }
+}

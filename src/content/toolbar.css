@@ -1,3 +1,4 @@
+/* 划词工具栏：浮在选区旁的胶囊按钮组。尺寸与 toolbar.ts 中 BTN_SIZE 保持一致。 */
 :host {
     all: initial;
     color-scheme: light dark;
@@ -8,12 +9,14 @@
     display: inline-flex;
     align-items: stretch;
     height: 28px;
-    background: linear-gradient(135deg, #4f8cff 0%, #2563eb 100%);
-    border: 1.5px solid #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    padding: 0;
+    background: var(--sl-surface);
+    border: 1px solid var(--sl-border);
+    border-radius: var(--sl-radius-pill);
+    box-shadow: var(--sl-shadow-lg);
     overflow: hidden;
-    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
+    font-family: var(--sl-font);
+    animation: sl-pop 0.16s var(--sl-ease);
 }
 .btn {
     width: 28px;
@@ -26,30 +29,38 @@
     padding: 0;
     cursor: pointer;
     transition: background 0.12s;
-    position: relative;
+}
+.btn:first-child {
+    background: var(--sl-gradient);
+}
+.btn:first-child .char {
+    color: var(--sl-on-brand);
+}
+.btn:first-child:hover {
+    filter: brightness(1.08);
 }
 .btn + .btn {
-    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    border-left: 1px solid var(--sl-border);
 }
 .btn:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--sl-brand-soft);
 }
 .btn:active {
-    background: rgba(0, 0, 0, 0.12);
+    transform: scale(0.94);
+}
+.btn:focus-visible {
+    outline: 2px solid var(--sl-brand);
+    outline-offset: -2px;
 }
 .char {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--sl-brand);
     line-height: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     pointer-events: none;
     user-select: none;
 }
-@media (prefers-color-scheme: dark) {
-    .bar {
-        background: linear-gradient(135deg, #5b94ff 0%, #2563eb 100%);
-        border-color: #1a1f29;
-        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
-    }
+@keyframes sl-pop {
+    from { opacity: 0; transform: translateY(4px) scale(0.96); }
+    to { opacity: 1; transform: none; }
 }

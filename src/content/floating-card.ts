@@ -1,3 +1,4 @@
+import tokensCss from "../shared/tokens.css?inline";
 import cardCss from "./card.css?inline";
 import type { LLMError } from "../shared/types";
 
@@ -26,7 +27,7 @@ export class FloatingCard {
         this.host.style.all = "initial";
         this.root = this.host.attachShadow({ mode: "closed" });
         const style = document.createElement("style");
-        style.textContent = cardCss;
+        style.textContent = tokensCss + cardCss;
         this.root.appendChild(style);
 
         const card = document.createElement("div");
@@ -37,7 +38,11 @@ export class FloatingCard {
 
         const header = document.createElement("div");
         header.className = "header";
-        header.innerHTML = `<span>${title}</span><span class="status"></span>`;
+        const titleEl = document.createElement("span");
+        titleEl.textContent = title;
+        const statusEl = document.createElement("span");
+        statusEl.className = "status";
+        header.append(titleEl, statusEl);
         const body = document.createElement("div");
         body.className = "body";
         const footer = document.createElement("div");
@@ -87,7 +92,7 @@ export class FloatingCard {
         this.footerEl.innerHTML = "";
         const ok = this.makeButton("继续", () => {
             this.cb.onConfirmLong?.();
-        });
+        }, true);
         const cancel = this.makeButton("取消", () => {
             this.cb.onCancelLong?.();
             this.unmount();
@@ -116,7 +121,7 @@ export class FloatingCard {
         }
         const copyDst = this.makeButton("复制译文", () => {
             navigator.clipboard.writeText(full).catch(() => {/* ignore */});
-        });
+        }, true);
         const close = this.makeButton("关闭", () => {
             this.cb.onClose?.();
             this.unmount();
@@ -146,12 +151,12 @@ export class FloatingCard {
             this.footerEl.appendChild(this.makeButton("打开设置", () => {
                 this.cb.onOpenOptions?.();
                 this.unmount();
-            }));
+            }, true));
         }
         if (err.code === "bad_response" || err.code === "unknown") {
             this.footerEl.appendChild(this.makeButton("重试", () => {
                 this.cb.onRetry?.();
-            }));
+            }, true));
         }
         if (this.sourceText) {
             this.footerEl.appendChild(this.makeButton("复制原文", () => {
@@ -185,9 +190,11 @@ export class FloatingCard {
         return this.host !== null;
     }
 
-    private makeButton(label: string, onClick: () => void): HTMLButtonElement {
+    /** primary 为主操作按钮（品牌色），每组最多一个，引导用户下一步。 */
+    private makeButton(label: string, onClick: () => void, primary = false): HTMLButtonElement {
         const b = document.createElement("button");
         b.textContent = label;
+        if (primary) b.className = "primary";
         b.addEventListener("click", onClick);
         return b;
     }

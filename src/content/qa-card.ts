@@ -1,3 +1,4 @@
+import tokensCss from "../shared/tokens.css?inline";
 import qaCardCss from "./qa-card.css?inline";
 import type { ChatMessage, LLMError } from "../shared/types";
 import {
@@ -7,6 +8,7 @@ import {
 import { addMemo } from "../shared/storage";
 import { showToast } from "../shared/toast";
 import { rtMemoUpdated, rtOpenSidepanel } from "../shared/messages";
+import { LOG_PREFIX } from "../shared/constants";
 
 type QACardCallbacks = {
     onSend: (messages: ChatMessage[]) => void;
@@ -31,7 +33,7 @@ export class QACard {
     mount(rect: DOMRect | null, sourceText: string, callbacks: QACardCallbacks): void {
         this.unmount();
         if (!sourceText) {
-            console.warn("[工具插件] QACard.mount called with empty sourceText");
+            console.warn(LOG_PREFIX, "QACard.mount called with empty sourceText");
             return;
         }
         this.cb = callbacks;
@@ -43,7 +45,7 @@ export class QACard {
         this.root = this.host.attachShadow({ mode: "closed" });
 
         const style = document.createElement("style");
-        style.textContent = qaCardCss;
+        style.textContent = tokensCss + qaCardCss;
         this.root.appendChild(style);
 
         const card = document.createElement("div");
@@ -359,7 +361,7 @@ async function saveQAAnswerToMemo(answer: string, sourceContext: string): Promis
             },
         });
     } catch (e) {
-        console.error("[工具插件] saveQAAnswerToMemo failed:", e);
+        console.error(LOG_PREFIX, "saveQAAnswerToMemo failed:", e);
         showToast("保存失败：存储空间不足");
     }
 }

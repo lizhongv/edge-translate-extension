@@ -1,3 +1,4 @@
+import tokensCss from "../shared/tokens.css?inline";
 import toolbarCss from "./toolbar.css?inline";
 
 export type ToolbarAction = { id: string; char: string; label: string };
@@ -17,7 +18,7 @@ export class Toolbar {
             this.root = this.host.attachShadow({ mode: "closed" });
 
             const style = document.createElement("style");
-            style.textContent = toolbarCss;
+            style.textContent = tokensCss + toolbarCss;
             this.root.appendChild(style);
 
             const bar = document.createElement("div");

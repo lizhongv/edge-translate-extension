@@ -14,6 +14,7 @@ import {
 import { showToast } from "../shared/toast";
 import type { ChatMessage, HistoryItem, LLMError, Memo, QASession } from "../shared/types";
 import { buildMemosMarkdown } from "./export-md";
+import { LOG_PREFIX } from "../shared/constants";
 
 // ===== view state =====
 type View = "translate" | "qa" | "detail-qa" | "memo" | "detail-memo";
@@ -41,6 +42,16 @@ const memoDetailTpl = document.getElementById("memo-detail-tpl") as HTMLTemplate
 
 const fmtTime = (ts: number): string => new Date(ts).toLocaleString();
 
+/** 空状态：图标 + 标题 + 引导文案。参数均为本文件内的固定文案，不含用户输入。 */
+function emptyState(icon: string, title: string, hint: string): string {
+    return `<div class="empty"><div class="empty-icon">${icon}</div>`
+        + `<div class="empty-title">${title}</div><div class="empty-hint">${hint}</div></div>`;
+}
+
+document.getElementById("open-options")?.addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
+});
+
 function exportMemos(memos: Memo[]): void {
     if (memos.length === 0) return;
     try {
@@ -54,7 +65,7 @@ function exportMemos(memos: Memo[]): void {
         URL.revokeObjectURL(url);
         showToast("已导出 ✓");
     } catch (e) {
-        console.error("[工具插件] export failed:", e);
+        console.error(LOG_PREFIX, "export failed:", e);
         showToast("导出失败");
     }
 }
@@ -124,7 +135,8 @@ memoExportBtn.addEventListener("click", async () => {
 function renderTranslateList(items: HistoryItem[]): void {
     translateListEl.innerHTML = "";
     if (items.length === 0) {
-        translateListEl.innerHTML = '<div class="empty">暂无翻译历史</div>';
+        translateListEl.innerHTML = emptyState("文", "还没有翻译记录",
+            "在任意网页选中文字，点击浮出的「翻」即可翻译<br>也可以右键菜单或按 Alt+T");
         return;
     }
     for (const item of items) {
@@ -153,7 +165,7 @@ function renderTranslateList(items: HistoryItem[]): void {
 function renderQAList(sessions: QASession[]): void {
     qaListEl.innerHTML = "";
     if (sessions.length === 0) {
-        qaListEl.innerHTML = '<div class="empty">暂无问答会话</div>';
+        qaListEl.innerHTML = emptyState("问", "还没有问答会话", "选中文字后点击「问」，就选中内容向 AI 提问");
         return;
     }
     for (const s of sessions) {
@@ -188,7 +200,6 @@ let detailMessagesEl: HTMLElement | null = null;
 let detailTextarea: HTMLTextAreaElement | null = null;
 let detailSendBtn: HTMLButtonElement | null = null;
 let detailPort: chrome.runtime.Port | null = null;
-let detailPartial = "";
 let detailCurrentBubble: HTMLElement | null = null;
 
 async function renderQADetail(): Promise<void> {
@@ -197,7 +208,7 @@ async function renderQADetail(): Promise<void> {
     const sessions = await getQASessions();
     const s = sessions.find(x => x.id === currentDetailSessionId);
     if (!s) {
-        qaDetailEl.innerHTML = '<div class="empty">会话不存在</div>';
+        qaDetailEl.innerHTML = emptyState("!", "会话不存在", "该会话可能已被删除");
         return;
     }
     detailSession = s;
@@ -250,7 +261,7 @@ async function saveQAAnswerToMemoFromSidepanel(
         showToast("已保存 ✓");
         if (currentView === "memo") void refresh();
     } catch (e) {
-        console.error("[工具插件] sidepanel save memo failed:", e);
+        console.error(LOG_PREFIX, "sidepanel save memo failed:", e);
         showToast("保存失败");
     }
 }
@@ -272,7 +283,6 @@ async function detailSend(): Promise<void> {
     detailTextarea.disabled = true;
     detailSendBtn.disabled = true;
     detailTextarea.value = "";
-    detailPartial = "";
 
     detailPort = chrome.runtime.connect({ name: "task" });
     detailPort.onMessage.addListener((msg: unknown) => {
@@ -280,7 +290,6 @@ async function detailSend(): Promise<void> {
             if (detailCurrentBubble) setBubbleThinking(detailCurrentBubble);
             if (detailMessagesEl) detailMessagesEl.scrollTop = detailMessagesEl.scrollHeight;
         } else if (isTokenMsg(msg)) {
-            detailPartial += msg.chunk;
             if (detailCurrentBubble) appendTokenToBubble(detailCurrentBubble, msg.chunk);
             if (detailMessagesEl) detailMessagesEl.scrollTop = detailMessagesEl.scrollHeight;
         } else if (isDoneMsg(msg)) {
@@ -340,7 +349,9 @@ function renderMemoList(memos: Memo[]): void {
     const filtered = memos.filter(m => memoMatches(m, memoQuery));
     memoExportBtn.disabled = filtered.length === 0;
     if (filtered.length === 0) {
-        memoListEl.innerHTML = `<div class="empty">${memoQuery ? "无匹配项" : "暂无备忘录"}</div>`;
+        memoListEl.innerHTML = memoQuery
+            ? emptyState("?", "没有匹配的备忘录", "换个关键词试试")
+            : emptyState("存", "还没有备忘录", "选中文字后点击「存」，或在问答回答下点「保存到备忘录」");
         return;
     }
     for (const m of filtered) {
@@ -374,7 +385,7 @@ async function renderMemoDetail(): Promise<void> {
     const memos = await getMemos();
     const memo = memos.find(m => m.id === currentDetailMemoId);
     if (!memo) {
-        memoDetailEl.innerHTML = '<div class="empty">该条已被删除</div>';
+        memoDetailEl.innerHTML = emptyState("!", "该条备忘录已被删除", "");
         return;
     }
     const node = memoDetailTpl.content.cloneNode(true) as DocumentFragment;
@@ -419,7 +430,7 @@ async function renderMemoDetail(): Promise<void> {
             setView("memo");
             await refresh();
         } catch (e) {
-            console.error("[工具插件] updateMemo failed:", e);
+            console.error(LOG_PREFIX, "updateMemo failed:", e);
             showToast("保存失败");
         }
     });

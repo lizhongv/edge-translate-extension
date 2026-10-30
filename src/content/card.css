@@ -1,3 +1,4 @@
+/* 翻译结果卡片：标题栏（品牌点 + 标题 + 状态）、正文、操作按钮。 */
 :host {
     all: initial;
     color-scheme: light dark;
@@ -6,63 +7,111 @@
     position: fixed;
     z-index: 2147483647;
     max-width: 420px;
-    min-width: 240px;
-    background: #fff;
-    color: #1a1a1a;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+    min-width: 260px;
+    background: var(--sl-surface);
+    color: var(--sl-text);
+    border: 1px solid var(--sl-border);
+    border-radius: var(--sl-radius-lg);
+    box-shadow: var(--sl-shadow-lg);
+    font-family: var(--sl-font);
     font-size: 14px;
-    line-height: 1.55;
-    padding: 12px 14px;
+    line-height: 1.6;
+    overflow: hidden;
     overflow-wrap: break-word;
-}
-@media (prefers-color-scheme: dark) {
-    .card {
-        background: #1f1f1f;
-        color: #e6e6e6;
-        border-color: rgba(255, 255, 255, 0.1);
-    }
+    animation: sl-rise 0.18s var(--sl-ease);
 }
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    padding: 10px 14px;
     font-size: 12px;
-    opacity: 0.75;
+    font-weight: 600;
+    color: var(--sl-text-2);
+    background: var(--sl-surface-2);
+    border-bottom: 1px solid var(--sl-border);
+    letter-spacing: 0.02em;
+}
+.header > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.header > span:first-child::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sl-gradient);
+    box-shadow: 0 0 0 3px var(--sl-brand-ring);
+}
+.status {
+    font-weight: 400;
+    color: var(--sl-muted);
 }
 .body {
+    padding: 14px;
     white-space: pre-wrap;
+    max-height: 360px;
+    overflow-y: auto;
 }
 .footer {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 8px;
-    margin-top: 10px;
+    padding: 0 14px 14px;
+}
+.footer:empty {
+    display: none;
 }
 button {
     font: inherit;
+    font-size: 12px;
     cursor: pointer;
-    background: transparent;
-    border: 1px solid currentColor;
-    border-radius: 6px;
-    padding: 4px 10px;
-    color: inherit;
-    opacity: 0.85;
+    background: var(--sl-surface);
+    color: var(--sl-text-2);
+    border: 1px solid var(--sl-border-strong);
+    border-radius: var(--sl-radius-sm);
+    padding: 4px 12px;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 button:hover {
-    opacity: 1;
+    background: var(--sl-surface-hover);
+    color: var(--sl-text);
 }
-.error { color: #c0392b; }
+button.primary {
+    background: var(--sl-brand);
+    border-color: var(--sl-brand);
+    color: var(--sl-on-brand);
+}
+button.primary:hover {
+    background: var(--sl-brand-hover);
+    border-color: var(--sl-brand-hover);
+}
+button:focus-visible {
+    outline: 2px solid var(--sl-brand);
+    outline-offset: 1px;
+}
+.error {
+    color: var(--sl-danger);
+    background: var(--sl-danger-soft);
+    border-radius: var(--sl-radius-sm);
+    padding: 8px 10px;
+}
 .spinner {
     display: inline-block;
-    width: 10px; height: 10px;
-    border: 2px solid currentColor;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--sl-brand);
     border-right-color: transparent;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
-    margin-right: 6px;
+    margin-right: 8px;
+    vertical-align: -2px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes sl-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}

@@ -4,10 +4,12 @@ import {
     rtShowCard, rtRequestTranslate, rtHistoryUpdated, rtOpenQA, rtSaveMemo,
     rtQASessionUpdated, isTaskMsg, isRuntimeMessage,
 } from "../shared/messages";
+import { APP_NAME, LOG_PREFIX, MENU_IDS } from "../shared/constants";
 
-const MENU_ID = "fayichajian-translate-selection";
-const MENU_QA_ID = "fayichajian-qa-selection";
-const MENU_MEMO_ID = "fayichajian-memo-selection";
+const MENU_ID = MENU_IDS.translate;
+const MENU_QA_ID = MENU_IDS.qa;
+const MENU_MEMO_ID = MENU_IDS.memo;
+const MENU_ROOT_ID = "selectlingo-root";
 
 const isRestrictedUrl = (url: string | undefined): boolean => {
     if (!url) return true;
@@ -18,42 +20,40 @@ const notifyRestricted = (action: "翻译" | "问答" | "保存" = "翻译") => 
     chrome.notifications.create({
         type: "basic",
         iconUrl: chrome.runtime.getURL("icons/128.png"),
-        title: "工具插件",
-        message: `无法在此页面${action}（受限页面）`,
+        title: APP_NAME,
+        message: `无法在此页面${action}（浏览器内置页面与扩展页面受限）`,
     });
 };
 
+/** 右键菜单：三个动作收在「划词译问」父菜单下，不在页面右键菜单里平铺占位。 */
 function registerContextMenu(): void {
+    const onCreated = (label: string) => () => {
+        const err = chrome.runtime.lastError;
+        if (err) console.error(LOG_PREFIX, `注册右键菜单「${label}」失败:`, err.message);
+    };
     chrome.contextMenus.removeAll(() => {
-        chrome.contextMenus.create({
-            id: MENU_ID,
-            title: "翻译选中内容",
-            contexts: ["selection"],
-        }, () => {
-            const err = chrome.runtime.lastError;
-            if (err) console.error("[工具插件] 注册右键菜单失败:", err.message);
-            else console.log("[工具插件] 右键菜单已注册");
-        });
-        chrome.contextMenus.create({
-            id: MENU_QA_ID,
-            title: "问答选中内容",
-            contexts: ["selection"],
-        }, () => {
-            const err = chrome.runtime.lastError;
-            if (err) console.error("[工具插件] 注册问答菜单失败:", err.message);
-        });
-        chrome.contextMenus.create({
-            id: MENU_MEMO_ID,
-            title: "保存选中到备忘录",
-            contexts: ["selection"],
-        }, () => {
-            const err = chrome.runtime.lastError;
-            if (err) console.error("[工具插件] 注册备忘录菜单失败:", err.message);
-        });
+        chrome.contextMenus.create({ id: MENU_ROOT_ID, title: APP_NAME, contexts: ["selection"] },
+            onCreated(APP_NAME));
+        const items: [string, string][] = [
+            [MENU_ID, "翻译选中内容"],
+            [MENU_QA_ID, "就选中内容提问"],
+            [MENU_MEMO_ID, "保存到备忘录"],
+        ];
+        for (const [id, title] of items) {
+            chrome.contextMenus.create({ id, parentId: MENU_ROOT_ID, title, contexts: ["selection"] },
+                onCreated(title));
+        }
     });
 }
 
-chrome.runtime.onInstalled.addListener(registerContextMenu);
+chrome.runtime.onInstalled.addListener((details) => {
+    registerContextMenu();
+    // 首次安装打开设置页的欢迎引导：没有 API Key 时所有功能都不可用，先引导完成配置
+    if (details.reason === "install") {
+        chrome.tabs.create({ url: chrome.runtime.getURL("src/options/index.html#welcome") })
+            .catch(() => chrome.runtime.openOptionsPage());
+    }
+});
 chrome.runtime.onStartup.addListener(registerContextMenu);
 registerContextMenu();
 
@@ -67,7 +67,7 @@ async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
     try {
         await chrome.tabs.sendMessage(tabId, message);
     } catch (err) {
-        console.warn("[工具插件] sendMessage 失败，尝试注入 content script:", err);
+        console.warn(LOG_PREFIX, "sendMessage 失败，尝试注入 content script:", err);
         const files = getContentScriptFiles();
         if (files.length === 0) {
             notifyRestricted();
@@ -78,7 +78,7 @@ async function dispatchToTab(tabId: number, message: unknown): Promise<void> {
             await new Promise((r) => setTimeout(r, 80));
             await chrome.tabs.sendMessage(tabId, message);
         } catch (e) {
-            console.error("[工具插件] 注入并重发失败:", e);
+            console.error(LOG_PREFIX, "注入并重发失败:", e);
             notifyRestricted();
         }
     }
@@ -127,7 +127,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
             chrome.sidePanel.open({ windowId }).catch((e) => {
                 // Known limitation: if user gesture chain breaks, sidePanel.open
                 // throws and the user must click the extension icon manually.
-                console.warn("[工具插件] sidePanel.open failed:", e);
+                console.warn(LOG_PREFIX, "sidePanel.open failed:", e);
             });
         } else {
             chrome.windows.getLastFocused().then((w) => {
@@ -135,7 +135,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
                     chrome.sidePanel.open({ windowId: w.id }).catch((e) => {
                         // Known limitation: if user gesture chain breaks, sidePanel.open
                         // throws and the user must click the extension icon manually.
-                        console.warn("[工具插件] sidePanel.open fallback failed:", e);
+                        console.warn(LOG_PREFIX, "sidePanel.open fallback failed:", e);
                     });
                 }
             });

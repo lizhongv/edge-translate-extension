@@ -1,0 +1,8 @@
+{
+    "appName": { "message": "SelectLingo - AI Translate & Ask on Selection" },
+    "appShortName": { "message": "SelectLingo" },
+    "appDescription": { "message": "Select text on any page to translate, ask follow-up questions and save notes with AI. Works with DeepSeek, OpenAI and any OpenAI-compatible model. Your data stays on your device." },
+    "actionTitle": { "message": "SelectLingo: open side panel" },
+    "cmdTranslate": { "message": "Translate selected text" },
+    "cmdQA": { "message": "Ask about selected text" }
+}

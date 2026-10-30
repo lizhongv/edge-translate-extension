@@ -1,11 +1,18 @@
 import { defineManifest } from "@crxjs/vite-plugin";
 import pkg from "../package.json" with { type: "json" };
 
+/**
+ * 扩展清单。名称、描述、按钮提示走 _locales（public/_locales），
+ * 浏览器按界面语言显示「划词译问」或「SelectLingo」。
+ */
 export default defineManifest({
     manifest_version: 3,
-    name: "工具插件",
+    name: "__MSG_appName__",
+    short_name: "__MSG_appShortName__",
     version: pkg.version,
-    description: "划词翻译 / 问答 / 备忘录 一体化网页工具",
+    description: "__MSG_appDescription__",
+    default_locale: "zh_CN",
+    homepage_url: "https://github.com/lizhongv/edge-translate-extension",
     permissions: [
         "contextMenus",
         "storage",
@@ -32,15 +39,19 @@ export default defineManifest({
     },
     options_page: "src/options/index.html",
     action: {
-        default_title: "工具插件 - 打开历史",
+        default_title: "__MSG_actionTitle__",
+        default_icon: {
+            16: "icons/16.png",
+            32: "icons/32.png",
+        },
     },
     commands: {
         translate: {
             suggested_key: { default: "Alt+T" },
-            description: "翻译当前选中文本",
+            description: "__MSG_cmdTranslate__",
         },
         qa: {
-            description: "问答当前选中文本（在 edge://extensions/shortcuts 设置快捷键）",
+            description: "__MSG_cmdQA__",
         },
     },
     icons: {

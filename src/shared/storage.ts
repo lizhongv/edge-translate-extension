@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS, type Settings, type HistoryItem } from "./types";
+import { LOG_PREFIX } from "./constants";
 
 const SETTINGS_SYNC_KEY = "settingsSync";
 const SETTINGS_LOCAL_KEY = "settingsLocal";
@@ -22,11 +23,11 @@ const splitSettings = (s: Settings): { syncPart: Partial<Settings>; localPart: P
 function withTimeout<T>(promise: Promise<T>, fallback: T, label: string): Promise<T> {
     return new Promise<T>((resolve) => {
         const timer = setTimeout(() => {
-            console.warn(`[工具插件] storage ${label} 超过 ${STORAGE_TIMEOUT_MS}ms，使用默认值（chrome.storage.sync 可能因 Edge 同步异常而卡住）`);
+            console.warn(`${LOG_PREFIX} storage ${label} 超过 ${STORAGE_TIMEOUT_MS}ms，使用默认值（chrome.storage.sync 可能因 Edge 同步异常而卡住）`);
             resolve(fallback);
         }, STORAGE_TIMEOUT_MS);
         promise.then((v) => { clearTimeout(timer); resolve(v); })
-               .catch((e) => { clearTimeout(timer); console.warn(`[工具插件] storage ${label} 失败:`, e); resolve(fallback); });
+               .catch((e) => { clearTimeout(timer); console.warn(`${LOG_PREFIX} storage ${label} 失败:`, e); resolve(fallback); });
     });
 }
 

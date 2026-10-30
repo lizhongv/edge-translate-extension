@@ -1,3 +1,4 @@
+/* 轻提示：右上角浮现，深色底在浅色与深色页面上都清晰。 */
 :host {
     all: initial;
     color-scheme: light dark;
@@ -7,20 +8,21 @@
     top: 16px;
     right: 16px;
     z-index: 2147483647;
-    background: rgba(30, 41, 59, 0.95);
-    color: #fff;
-    border-radius: 8px;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--sl-radius);
     padding: 10px 14px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+    box-shadow: var(--sl-shadow-lg);
+    font-family: var(--sl-font);
     font-size: 13px;
     line-height: 1.4;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     opacity: 0;
     transform: translateY(-8px);
-    transition: opacity 0.18s, transform 0.18s;
+    transition: opacity 0.18s var(--sl-ease), transform 0.18s var(--sl-ease);
     pointer-events: auto;
 }
 .toast.shown {
@@ -29,18 +31,13 @@
 }
 .toast .msg { white-space: pre; }
 .toast .action {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.24);
     color: inherit;
     font: inherit;
-    border-radius: 6px;
-    padding: 2px 8px;
+    font-weight: 600;
+    border-radius: var(--sl-radius-sm);
+    padding: 3px 10px;
     cursor: pointer;
 }
-.toast .action:hover { border-color: #fff; }
-@media (prefers-color-scheme: light) {
-    .toast {
-        background: rgba(30, 41, 59, 0.92);
-        color: #fff;
-    }
-}
+.toast .action:hover { background: rgba(255, 255, 255, 0.18); }

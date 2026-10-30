@@ -3,95 +3,212 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>工具插件 - 设置</title>
+    <title>划词译问 · 设置</title>
     <link rel="stylesheet" href="./options.css" />
 </head>
 <body>
-    <main>
-        <h1>工具插件 设置</h1>
+    <aside class="sidebar">
+        <div class="brand">
+            <img class="logo" src="/icons/128.png" alt="" />
+            <div>
+                <div class="name">划词译问</div>
+                <div class="version" id="version">v—</div>
+            </div>
+        </div>
+        <nav class="nav" aria-label="设置分区">
+            <a href="#sec-model" class="active">模型服务</a>
+            <a href="#sec-translate">翻译</a>
+            <a href="#sec-qa">问答</a>
+            <a href="#sec-toolbar">工具栏与快捷键</a>
+            <a href="#sec-advanced">高级</a>
+            <a href="#sec-about">关于</a>
+        </nav>
+        <div class="sidebar-foot">数据只保存在本机浏览器中</div>
+    </aside>
 
-        <section>
-            <h2>LLM 接口</h2>
-            <label>Base URL <input id="baseUrl" placeholder="https://api.deepseek.com/v1" /></label>
-            <label>API Key <input id="apiKey" type="password" /></label>
-            <label>Model <input id="model" placeholder="deepseek-chat" /></label>
-            <label>Temperature <input id="temperature" type="number" step="0.1" min="0" max="2" /></label>
-            <label>思考模式
+    <main>
+        <section id="welcome" class="welcome" hidden>
+            <div class="welcome-title">欢迎使用划词译问 👋</div>
+            <p>选中网页文字即可翻译、提问、收藏。开始前只需三步完成模型配置：</p>
+            <ol class="steps">
+                <li><b>选择服务商</b><span>下方选一个，自动填好接口地址和模型</span></li>
+                <li><b>填写 API Key</b><span>点「获取 API Key」到服务商官网申请</span></li>
+                <li><b>测试连接并保存</b><span>显示「连接正常」后点击保存</span></li>
+            </ol>
+        </section>
+
+        <section id="sec-model" class="card">
+            <header class="card-head">
+                <h2>模型服务</h2>
+                <p>支持任意 OpenAI 兼容接口。API Key 仅保存在本机，不会同步或上传。</p>
+            </header>
+
+            <div class="field">
+                <span class="field-label">服务商</span>
+                <div id="providerGrid" class="provider-grid" role="radiogroup" aria-label="服务商"></div>
+                <p id="providerHint" class="hint"></p>
+            </div>
+
+            <label class="field">
+                <span class="field-label">接口地址 Base URL</span>
+                <input id="baseUrl" placeholder="https://api.deepseek.com/v1" autocomplete="off" />
+            </label>
+
+            <label class="field">
+                <span class="field-label">
+                    API Key
+                    <a id="keyLink" class="link" target="_blank" rel="noopener" hidden>获取 API Key ↗</a>
+                </span>
+                <span class="input-group">
+                    <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+                    <button id="toggleKey" type="button" class="btn ghost" aria-label="显示或隐藏 API Key">显示</button>
+                </span>
+            </label>
+
+            <div class="grid-2">
+                <label class="field">
+                    <span class="field-label">模型 Model</span>
+                    <input id="model" placeholder="deepseek-chat" autocomplete="off" />
+                </label>
+                <label class="field">
+                    <span class="field-label">温度 Temperature</span>
+                    <input id="temperature" type="number" step="0.1" min="0" max="2" />
+                </label>
+            </div>
+
+            <label class="field">
+                <span class="field-label">思考模式</span>
                 <select id="thinkingMode">
                     <option value="auto">自动（跟随模型默认，不发送开关）</option>
                     <option value="on">开启（先推理后作答，更慢、输出 token 更贵）</option>
                     <option value="off">关闭（直接作答，适合翻译）</option>
                 </select>
+                <span class="hint">仅对支持思考开关的模型生效（如 DeepSeek V4）；选「自动」时请求中不包含该字段。开启思考后温度会被模型忽略。</span>
             </label>
-            <p class="muted">
-                仅对支持思考开关的模型生效（如 DeepSeek V4）。选「自动」时请求体不包含该字段，对 OpenAI / Ollama 等端点无任何影响。
-                注意：思考模式下 Temperature 会被模型忽略。
-            </p>
-            <label>System Prompt
-                <textarea id="systemPrompt" rows="6"></textarea>
-            </label>
-            <label>自定义请求头（JSON 对象）
-                <textarea id="customHeaders" rows="3" placeholder='{"X-Custom": "value"}'></textarea>
-            </label>
-            <button id="testConn">测试连接</button>
-            <span id="testResult" class="muted"></span>
+
+            <div class="test-row">
+                <button id="testConn" type="button" class="btn primary">测试连接</button>
+                <span id="testResult" class="status"></span>
+            </div>
         </section>
 
-        <section>
-            <h2>翻译方向</h2>
-            <label>主要目标语言 <input id="primaryTarget" placeholder="中文" /></label>
-            <label>第二语言（用于反向） <input id="secondaryTarget" placeholder="English" /></label>
-        </section>
-
-        <section>
-            <h2>行为</h2>
-            <label>长文软提示阈值（字符）<input id="longTextThreshold" type="number" min="100" /></label>
-            <label>历史保留上限<input id="historyLimit" type="number" min="10" /></label>
-            <label class="checkbox-label">
-                <input id="enableHoverButton" type="checkbox" />
-                启用划词浮标（选中文字后在选区右下角显示一键翻译按钮；输入框不出现）
-            </label>
-            <label class="checkbox-label">
-                <input id="forceSelectable" type="checkbox" />
-                强制页面可选（覆盖站点的禁复制 CSS；遇到禁复制页面才打开。可能影响按钮拖动等交互。设置后需刷新页面生效）
-            </label>
-            <p class="muted">
-                快捷键在 <code>edge://extensions/shortcuts</code> 处修改。
-                当前默认：<span id="shortcut">Alt+T</span>。
-            </p>
-        </section>
-
-        <section>
-            <h2>问答</h2>
-            <label class="checkbox-label">
-                <input id="enableQA" type="checkbox" />
-                在工具栏中显示「问答」按钮
-            </label>
-            <label>问答系统提示词
-                <textarea id="qaSystemPrompt" rows="6"></textarea>
-            </label>
-            <label>多轮上限（轮数，超出后自动丢弃最早一对）
-                <input id="qaMaxTurns" type="number" min="1" max="20" />
+        <section id="sec-translate" class="card">
+            <header class="card-head">
+                <h2>翻译</h2>
+                <p>选中文字为主要目标语言时，自动反向翻译为第二语言。</p>
+            </header>
+            <div class="grid-2">
+                <label class="field">
+                    <span class="field-label">主要目标语言</span>
+                    <input id="primaryTarget" placeholder="中文" />
+                </label>
+                <label class="field">
+                    <span class="field-label">第二语言（反向翻译）</span>
+                    <input id="secondaryTarget" placeholder="English" />
+                </label>
+            </div>
+            <label class="field">
+                <span class="field-label">翻译提示词</span>
+                <textarea id="systemPrompt" rows="5" spellcheck="false"></textarea>
+                <span class="hint">可用占位符 <code>{{TARGET_LANG}}</code>、<code>{{SECONDARY_LANG}}</code>。</span>
             </label>
         </section>
 
-        <section>
-            <h2>备忘录</h2>
-            <label class="checkbox-label">
-                <input id="enableMemo" type="checkbox" />
-                在工具栏中显示「存」按钮
+        <section id="sec-qa" class="card">
+            <header class="card-head">
+                <h2>问答</h2>
+                <p>选中文字后点「问」，就选中内容与 AI 多轮对话，会话保存在侧边栏。</p>
+            </header>
+            <label class="switch-row">
+                <span><b>在工具栏显示「问」按钮</b><small>关闭后仍可通过右键菜单使用</small></span>
+                <input id="enableQA" type="checkbox" class="switch" />
             </label>
-            <label class="checkbox-label">
-                <input id="enableSettingsButton" type="checkbox" />
-                在工具栏中显示「设」按钮（一键打开设置页）
+            <label class="field">
+                <span class="field-label">保留的对话轮数</span>
+                <input id="qaMaxTurns" type="number" min="1" max="20" class="narrow" />
+                <span class="hint">超出后自动丢弃最早一轮，控制费用与上下文长度。</span>
+            </label>
+            <label class="field">
+                <span class="field-label">问答提示词</span>
+                <textarea id="qaSystemPrompt" rows="5" spellcheck="false"></textarea>
             </label>
         </section>
 
-        <div class="bar">
-            <button id="save">保存</button>
-            <span id="saveResult" class="muted"></span>
-        </div>
+        <section id="sec-toolbar" class="card">
+            <header class="card-head">
+                <h2>工具栏与快捷键</h2>
+                <p>选中文字后在选区旁浮出工具栏：翻 · 问 · 存 · 设。</p>
+            </header>
+            <label class="switch-row">
+                <span><b>启用划词工具栏</b><small>在输入框、可编辑区域中不会出现</small></span>
+                <input id="enableHoverButton" type="checkbox" class="switch" />
+            </label>
+            <label class="switch-row">
+                <span><b>显示「存」按钮</b><small>一键把选中文字保存到备忘录</small></span>
+                <input id="enableMemo" type="checkbox" class="switch" />
+            </label>
+            <label class="switch-row">
+                <span><b>显示「设」按钮</b><small>一键打开本设置页</small></span>
+                <input id="enableSettingsButton" type="checkbox" class="switch" />
+            </label>
+            <div class="shortcut-row">
+                <div>
+                    <b>快捷键</b>
+                    <small>翻译 <kbd id="shortcut">Alt+T</kbd>；问答可自行绑定</small>
+                </div>
+                <button id="openShortcuts" type="button" class="btn">修改快捷键</button>
+            </div>
+        </section>
+
+        <section id="sec-advanced" class="card">
+            <header class="card-head">
+                <h2>高级</h2>
+                <p>一般无需修改。</p>
+            </header>
+            <div class="grid-2">
+                <label class="field">
+                    <span class="field-label">长文提醒阈值（字符）</span>
+                    <input id="longTextThreshold" type="number" min="100" />
+                    <span class="hint">超过时先确认再请求，避免误选大段文字产生费用。</span>
+                </label>
+                <label class="field">
+                    <span class="field-label">历史保留条数</span>
+                    <input id="historyLimit" type="number" min="10" />
+                </label>
+            </div>
+            <label class="field">
+                <span class="field-label">自定义请求头（JSON）</span>
+                <textarea id="customHeaders" rows="3" placeholder='{"X-Custom": "value"}' spellcheck="false"></textarea>
+            </label>
+            <label class="switch-row">
+                <span><b>强制页面文字可选</b><small>遇到禁止复制的网页时开启；可能影响页面拖拽交互，刷新页面后生效</small></span>
+                <input id="forceSelectable" type="checkbox" class="switch" />
+            </label>
+        </section>
+
+        <section id="sec-about" class="card">
+            <header class="card-head">
+                <h2>关于</h2>
+            </header>
+            <div class="about">
+                <p>划词译问是开源、免费的划词翻译与问答工具。所有请求由你的浏览器直接发往你配置的模型服务，
+                    不经过任何第三方服务器；设置、历史与备忘录只保存在本机。</p>
+                <div class="links">
+                    <a id="lnkPrivacy" class="link" target="_blank" rel="noopener">隐私政策</a>
+                    <a id="lnkChangelog" class="link" target="_blank" rel="noopener">更新日志</a>
+                    <a id="lnkIssues" class="link" target="_blank" rel="noopener">问题反馈</a>
+                    <a id="lnkRepo" class="link" target="_blank" rel="noopener">GitHub</a>
+                </div>
+            </div>
+        </section>
     </main>
+
+    <div class="savebar">
+        <span id="dirtyHint" class="dirty" hidden>● 有未保存的修改</span>
+        <span id="saveResult" class="status"></span>
+        <button id="save" type="button" class="btn primary">保存设置</button>
+    </div>
+
     <script type="module" src="./index.ts"></script>
 </body>
 </html>
