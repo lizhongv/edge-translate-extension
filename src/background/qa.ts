@@ -24,7 +24,9 @@ export async function answerQA(
     pageOrigin?: string,
     streamFn: StreamFn = defaultStream as StreamFn
 ): Promise<void> {
-    const settings = await getSettings();
+    const base = await getSettings();
+    // 问答可单独指定模型；未指定时沿用翻译模型，老用户升级后行为不变
+    const settings: Settings = base.qaModel ? { ...base, model: base.qaModel } : base;
     const truncated = truncateMessages(messages, settings.qaMaxTurns);
     const system = buildSystem(settings.qaSystemPrompt, sourceText);
 

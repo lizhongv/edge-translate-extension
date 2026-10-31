@@ -46,11 +46,38 @@ DEMO = {
     "memos": [],
 }
 
+# 模型下拉框截图用的演示数据：名称取自通义千问兼容模式 /models 的真实返回（节选）
+QWEN_MODELS = ["qwen-flash", "qwen-long", "qwen-max", "qwen-mt-plus", "qwen-plus", "qwen-plus-latest",
+               "qwen3-coder-flash", "qwen3.6-plus", "qwen3.7-flash", "qwen3.7-max", "qwen3.7-plus",
+               "qwen3.8-flash", "qwen3.8-max"]
+QWEN_NON_TEXT = ["qwen-image-2.0", "qwen3-tts-flash", "qwen3-vl-plus", "qwen3.7-text-embedding", "wan2.7-image"]
+DEMO_MODELS = {
+    "settingsSync": {"model": "qwen-plus", "qaModel": "qwen3.7-max",
+                     "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1"},
+    "modelList": {"baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                  "all": sorted(QWEN_MODELS + QWEN_NON_TEXT), "text": QWEN_MODELS, "fetchedAt": NOW},
+}
+
 STUB = """
 (() => {
   const params = new URLSearchParams(location.search);
   const data = JSON.parse(%s);
+  const DEMO_MODELS = JSON.parse(%s);
   if (params.has("nokey")) data.settingsLocal = {};
+  if (params.has("models")) {
+    Object.assign(data, DEMO_MODELS);
+    // 页面初始化完成后展开下拉框。无头截图不能正确处理页面滚动（会留出空白带），
+    // 因此隐藏模型字段上方的内容，让它直接出现在首屏
+    addEventListener("load", () => setTimeout(() => {
+      const field = document.getElementById("model").closest(".field");
+      document.getElementById("welcome").hidden = true;
+      for (const el of [...field.parentElement.children]) {
+        if (el === field) break;
+        if (!el.classList.contains("card-head")) el.style.display = "none";
+      }
+      document.getElementById("modelToggle").click();
+    }, 300));
+  }
   const pick = (keys) => {
     const out = {};
     for (const k of [].concat(keys ?? Object.keys(data))) if (k in data) out[k] = data[k];
@@ -61,7 +88,7 @@ STUB = """
   const evt = { addListener() {}, removeListener() {} };
   window.chrome = {
     storage: { sync: area, local: area, onChanged: evt },
-    runtime: { getManifest: () => ({ version: "1.0.0" }), sendMessage: () => Promise.resolve(),
+    runtime: { getManifest: () => ({ version: "1.1.0" }), sendMessage: () => Promise.resolve(),
                onMessage: evt, openOptionsPage() {}, connect: () => ({ onMessage: evt, onDisconnect: evt,
                postMessage() {}, disconnect() {} }), getURL: (p) => "/" + p },
     tabs: { create: () => Promise.resolve() },
@@ -117,7 +144,8 @@ def build_preview():
         raise SystemExit("请先运行 npm run build")
     os.makedirs(PREVIEW, exist_ok=True)
     with open(os.path.join(PREVIEW, "stub.js"), "w", encoding="utf-8") as f:
-        f.write(STUB % json.dumps(json.dumps(DEMO, ensure_ascii=False)))
+        f.write(STUB % (json.dumps(json.dumps(DEMO, ensure_ascii=False)),
+                        json.dumps(json.dumps(DEMO_MODELS, ensure_ascii=False))))
     for page in ("options", "sidepanel"):
         with open(os.path.join(DIST, "src", page, "index.html"), encoding="utf-8") as f:
             html = f.read()
@@ -172,6 +200,7 @@ def main():
         for dark in (False, True):
             sfx = "-dark" if dark else ""
             shot(edge, f"{base}/options.html?nokey", os.path.join(OUT, f"options{sfx}.png"), "1280,860", dark)
+            shot(edge, f"{base}/options.html?models", os.path.join(OUT, f"models{sfx}.png"), "1280,620", dark)
             shot(edge, f"{base}/sidepanel.html", os.path.join(OUT, f"sidepanel{sfx}.png"), "520,820", dark)
             shot(edge, f"{base}/cards.html", os.path.join(OUT, f"in-page{sfx}.png"), "1100,720", dark)
     finally:

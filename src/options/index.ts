@@ -2,10 +2,12 @@
  * 设置页：表单读写、服务商预设、连接测试、未保存提醒、首次安装欢迎引导、导航联动。
  * 表单字段与 Settings 一一对应，读写只经过 fillForm / readForm 两个函数。
  */
-import { getSettings, setSettings } from "../shared/storage";
+import { getModelListCache, getSettings, setModelListCache, setSettings, type ModelListCache } from "../shared/storage";
 import { stream } from "../background/llm-client";
 import { LINKS } from "../shared/constants";
 import { CUSTOM_PROVIDER_ID, PROVIDERS, detectProvider, getProvider } from "../shared/providers";
+import { fetchModels } from "../shared/model-list";
+import { createCombobox } from "./combobox";
 import type { Settings } from "../shared/types";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -26,6 +28,7 @@ const inputs = {
     enableQA: $<HTMLInputElement>("enableQA"),
     qaSystemPrompt: $<HTMLTextAreaElement>("qaSystemPrompt"),
     qaMaxTurns: $<HTMLInputElement>("qaMaxTurns"),
+    qaModel: $<HTMLInputElement>("qaModel"),
     enableMemo: $<HTMLInputElement>("enableMemo"),
     enableSettingsButton: $<HTMLInputElement>("enableSettingsButton"),
     forceSelectable: $<HTMLInputElement>("forceSelectable"),
@@ -57,6 +60,7 @@ function fillForm(s: Settings): void {
     inputs.enableQA.checked = s.enableQA;
     inputs.qaSystemPrompt.value = s.qaSystemPrompt;
     inputs.qaMaxTurns.value = String(s.qaMaxTurns);
+    inputs.qaModel.value = s.qaModel;
     inputs.enableMemo.checked = s.enableMemo;
     inputs.enableSettingsButton.checked = s.enableSettingsButton;
     inputs.forceSelectable.checked = s.forceSelectable;
@@ -86,6 +90,7 @@ function readForm(): Partial<Settings> {
         enableQA: inputs.enableQA.checked,
         qaSystemPrompt: inputs.qaSystemPrompt.value,
         qaMaxTurns: Math.min(20, Math.max(1, Number(inputs.qaMaxTurns.value) || 6)),
+        qaModel: inputs.qaModel.value.trim(),
         enableMemo: inputs.enableMemo.checked,
         enableSettingsButton: inputs.enableSettingsButton.checked,
         forceSelectable: inputs.forceSelectable.checked,
@@ -142,13 +147,85 @@ function selectProvider(id: string, fill: boolean): void {
     if (fill) {
         inputs.baseUrl.value = p.baseUrl;
         inputs.model.value = p.model;
+        inputs.qaModel.value = "";   // 各家模型名不通用，换服务商后问答模型回到「与翻译相同」
         if (!p.needsKey && !inputs.apiKey.value) inputs.apiKey.value = "ollama";
         setDirty(true);
         setStatus(testResult, "", "");
+        void loadModelList(false);
     }
 }
 
-inputs.baseUrl.addEventListener("input", () => selectProvider(detectProvider(inputs.baseUrl.value), false));
+let baseUrlTimer: ReturnType<typeof setTimeout> | undefined;
+inputs.baseUrl.addEventListener("input", () => {
+    selectProvider(detectProvider(inputs.baseUrl.value), false);
+    // 手动改地址时防抖，等输入停下再按新地址读取缓存的模型列表
+    clearTimeout(baseUrlTimer);
+    baseUrlTimer = setTimeout(() => void loadModelList(false), 400);
+});
+
+// ===== 模型列表 =====
+const modelStatus = $<HTMLSpanElement>("modelListStatus");
+const showAllModels = $<HTMLInputElement>("showAllModels");
+const refreshModelsBtn = $<HTMLButtonElement>("refreshModels");
+const COMBO_EMPTY = "暂无候选，点「获取模型列表」或直接输入模型名";
+const modelCombo = createCombobox({
+    input: inputs.model, toggle: $<HTMLButtonElement>("modelToggle"), emptyText: COMBO_EMPTY, onPick: () => setDirty(true),
+});
+const qaModelCombo = createCombobox({
+    input: inputs.qaModel, toggle: $<HTMLButtonElement>("qaModelToggle"), emptyText: COMBO_EMPTY, onPick: () => setDirty(true),
+});
+
+/** 当前接口地址对应的已获取列表；没有时下拉框显示服务商推荐模型。 */
+let modelList: ModelListCache | undefined;
+
+const recommendedModels = (): string[] => getProvider(detectProvider(inputs.baseUrl.value))?.models ?? [];
+const describeList = (c: ModelListCache): string => `已获取 ${c.text.length} 个文本模型（共 ${c.all.length} 个）`;
+
+function applyModelItems(): void {
+    const items = modelList ? (showAllModels.checked ? modelList.all : modelList.text) : recommendedModels();
+    modelCombo.setItems(items);
+    qaModelCombo.setItems(items);
+}
+
+function parseHeadersLoose(): Record<string, string> {
+    try {
+        const v = inputs.customHeaders.value.trim();
+        return v ? JSON.parse(v) : {};
+    } catch {
+        return {};   // 请求头格式错误在保存时提示；获取列表时按无自定义头处理
+    }
+}
+
+/** force 为 false 只读缓存（切换地址、打开页面时）；为 true 向服务商请求最新列表。 */
+async function loadModelList(force: boolean): Promise<void> {
+    const baseUrl = inputs.baseUrl.value.trim();
+    if (!force) {
+        modelList = await getModelListCache(baseUrl);
+        applyModelItems();
+        if (modelList) setStatus(modelStatus, describeList(modelList), "");
+        else setStatus(modelStatus, recommendedModels().length ? "当前显示推荐模型" : "", "");
+        return;
+    }
+    refreshModelsBtn.disabled = true;
+    setStatus(modelStatus, "正在获取模型列表…", "busy");
+    try {
+        const r = await fetchModels(baseUrl, inputs.apiKey.value, parseHeadersLoose());
+        modelList = { baseUrl, ...r, fetchedAt: Date.now() };
+        await setModelListCache(modelList);
+        applyModelItems();
+        setStatus(modelStatus, `✓ ${describeList(modelList)}`, "ok");
+    } catch (e) {
+        // 失败时保留已有列表；完全没有时回退到推荐模型，输入框仍可手动填写
+        applyModelItems();
+        const fallback = modelList ? "，继续显示上次获取的列表" : recommendedModels().length ? "，已显示推荐模型" : "，可直接输入模型名";
+        setStatus(modelStatus, `${(e as Error).message}${fallback}`, "err");
+    } finally {
+        refreshModelsBtn.disabled = false;
+    }
+}
+
+refreshModelsBtn.addEventListener("click", () => void loadModelList(true));
+showAllModels.addEventListener("change", applyModelItems);
 
 $<HTMLButtonElement>("toggleKey").addEventListener("click", (e) => {
     const show = inputs.apiKey.type === "password";
@@ -176,7 +253,9 @@ document.addEventListener("keydown", (e) => {
     }
 });
 document.querySelector("main")?.addEventListener("input", (e) => {
-    if ((e.target as HTMLElement).matches("input, textarea, select")) setDirty(true);
+    const el = e.target as HTMLElement;
+    // 「显示全部模型」只影响下拉候选，不是设置项
+    if (el.matches("input, textarea, select") && el !== showAllModels) setDirty(true);
 });
 window.addEventListener("beforeunload", (e) => {
     if (dirty) e.preventDefault();
@@ -207,6 +286,8 @@ testBtn.addEventListener("click", async () => {
         const dt = Math.round(performance.now() - t0);
         const thinkNote = sawReasoning ? "，思考模式已开启" : "";
         setStatus(testResult, `✓ 连接正常：${settings.model}，首字 ${dt} ms${thinkNote}`, "ok");
+        // 连接正常说明地址与 Key 可用，顺带获取一次模型列表（已有则不重复请求）
+        if (!modelList) void loadModelList(true);
     } catch (e) {
         const err = e as { message?: string };
         setStatus(testResult, `✕ ${err.message ?? "未知错误"}`, "err");
@@ -241,6 +322,7 @@ void (async () => {
     const s = await getSettings();
     fillForm(s);
     selectProvider(detectProvider(s.baseUrl), false);
+    await loadModelList(false);
     // 首次安装（#welcome）或尚未配置 API Key 时显示欢迎引导
     if (location.hash === "#welcome" || !s.apiKey) {
         $<HTMLElement>("welcome").hidden = false;

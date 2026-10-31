@@ -8,6 +8,8 @@ describe("providers", () => {
         for (const p of PROVIDERS) {
             expect(p.baseUrl).toMatch(/^https?:\/\//);
             expect(p.model.length).toBeGreaterThan(0);
+            expect(p.models[0]).toBe(p.model);   // 推荐列表首项即默认模型
+            expect(new Set(p.models).size).toBe(p.models.length);
             expect(ids.has(p.id)).toBe(false);
             ids.add(p.id);
         }

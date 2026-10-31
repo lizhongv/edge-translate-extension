@@ -6,7 +6,7 @@
 
 **选中网页文字，一键 AI 翻译、追问与收藏 —— 不离开当前页面，数据只存本机。**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-2563EB)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-2563EB)](CHANGELOG.md)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-4F46E5)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Browsers](https://img.shields.io/badge/Edge%20%7C%20Chrome-supported-0EA5E9)](#-安装)
 [![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6)](tsconfig.json)
@@ -28,7 +28,8 @@
 | 🌐 | **AI 翻译** | 流式输出，首字秒出；选中目标语言文字时自动反向翻译；同文同模型命中缓存 |
 | 💬 | **就选中内容提问** | 围绕选中段落多轮追问，会话保存在侧边栏，可随时继续 |
 | 📝 | **一键收藏** | 选中文字或 AI 回答一键存入备忘录，可搜索、编辑、导出 Markdown |
-| 🤖 | **任意模型** | 内置 DeepSeek、OpenAI、Kimi、通义千问、智谱 GLM、Ollama 预设，也支持任意 OpenAI 兼容接口 |
+| 🤖 | **任意模型** | 内置 DeepSeek、OpenAI、Kimi、通义千问、智谱 GLM、Ollama 预设，也支持任意 OpenAI 兼容接口；可下拉选择账号下的全部文本模型 |
+| 🎯 | **问答单独选模型** | 翻译用快而便宜的模型，问答用更强的模型，互不影响 |
 | 🧠 | **思考模式** | 支持 DeepSeek V4 等模型的思考开关；推理过程不进入历史与缓存 |
 | 🔒 | **隐私优先** | 请求由浏览器直连你配置的服务，不经过任何第三方服务器；API Key 只存本机、不参与同步 |
 | 🎨 | **精致界面** | 统一设计规范，浅色 / 深色自动切换；Shadow DOM 隔离，不受网页样式干扰 |
@@ -41,6 +42,12 @@
   <tr>
     <td align="center">设置页：选择服务商即自动填好接口与模型</td>
     <td align="center">侧边栏：翻译、问答、备忘录统一管理</td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/images/models.png" alt="模型下拉框"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">模型下拉框：获取账号下全部模型，默认只列文本模型，也可手动输入</td>
   </tr>
   <tr>
     <td><img src="docs/images/in-page-dark.png" alt="网页内卡片（深色）"></td>
@@ -156,8 +163,8 @@ edge-translate-extension/
 │   ├── background/        Service Worker：菜单、快捷键、翻译、问答、缓存
 │   ├── content/           内容脚本：选区监听、工具栏、翻译卡片、问答卡片
 │   ├── sidepanel/         侧边栏：历史、问答会话、备忘录
-│   ├── options/           设置页：服务商预设、连接测试、欢迎引导
-│   └── shared/            类型、存储、消息、常量、服务商预设、设计令牌
+│   ├── options/           设置页：服务商预设、模型下拉框、连接测试、欢迎引导
+│   └── shared/            类型、存储、消息、常量、服务商预设、模型列表、设计令牌
 ├── public/                图标与 _locales 中英文案
 ├── tests/unit/            Vitest 单元测试（jsdom + chrome API 模拟）
 ├── scripts/               生成图标、渲染截图

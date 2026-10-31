@@ -17,6 +17,8 @@ export type Settings = {
     enableQA: boolean;
     qaSystemPrompt: string;
     qaMaxTurns: number;
+    /** 问答专用模型；为空时沿用翻译模型 model。 */
+    qaModel: string;
     enableMemo: boolean;
     enableSettingsButton: boolean;
     forceSelectable: boolean;
@@ -134,6 +136,7 @@ export const DEFAULT_SETTINGS: Settings = {
     enableQA: true,
     qaSystemPrompt: DEFAULT_QA_SYSTEM_PROMPT,
     qaMaxTurns: 6,
+    qaModel: "",
     enableMemo: true,
     enableSettingsButton: true,
     forceSelectable: false,

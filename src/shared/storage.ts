@@ -222,3 +222,19 @@ export async function deleteMemo(id: string): Promise<void> {
 export async function clearMemos(): Promise<void> {
     await chrome.storage.local.set({ [MEMOS_KEY]: [] });
 }
+
+// ===== 模型列表缓存 =====
+// 只缓存最近一次的接口地址；切换服务商后地址不同即视为未命中，避免串用其他家的模型。
+const MODEL_LIST_KEY = "modelList";
+
+export type ModelListCache = { baseUrl: string; all: string[]; text: string[]; fetchedAt: number };
+
+export async function getModelListCache(baseUrl: string): Promise<ModelListCache | undefined> {
+    const r = await chrome.storage.local.get(MODEL_LIST_KEY);
+    const c = r[MODEL_LIST_KEY] as ModelListCache | undefined;
+    return c && c.baseUrl === baseUrl ? c : undefined;
+}
+
+export async function setModelListCache(cache: ModelListCache): Promise<void> {
+    await chrome.storage.local.set({ [MODEL_LIST_KEY]: cache });
+}

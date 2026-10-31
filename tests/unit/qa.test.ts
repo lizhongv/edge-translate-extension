@@ -21,6 +21,24 @@ beforeEach(async () => {
         model: "deepseek-chat",
         qaSystemPrompt: "PROMPT",
         qaMaxTurns: 6,
+        qaModel: "",
+    });
+});
+
+describe("answerQA model selection", () => {
+    it("未设置问答模型时沿用翻译模型", async () => {
+        const streamFn = mkStreamFn(["A"]);
+        await answerQA("sid-m1", "src", [{ role: "user", content: "Q" }], makePort(), new AbortController().signal, undefined, streamFn);
+        expect((streamFn.mock.calls[0] as any)[1].model).toBe("deepseek-chat");
+        expect((await getQASessions()).find(s => s.id === "sid-m1")?.model).toBe("deepseek-chat");
+    });
+
+    it("设置问答模型后请求与会话记录都使用它", async () => {
+        await setSettings({ qaModel: "deepseek-reasoner" });
+        const streamFn = mkStreamFn(["A"]);
+        await answerQA("sid-m2", "src", [{ role: "user", content: "Q" }], makePort(), new AbortController().signal, undefined, streamFn);
+        expect((streamFn.mock.calls[0] as any)[1].model).toBe("deepseek-reasoner");
+        expect((await getQASessions()).find(s => s.id === "sid-m2")?.model).toBe("deepseek-reasoner");
     });
 });
 

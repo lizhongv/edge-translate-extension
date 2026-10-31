@@ -1,6 +1,6 @@
 # 架构说明
 
-> 适用版本：v1.0.0
+> 适用版本：v1.1.0
 
 ## 1. 整体结构
 
@@ -30,8 +30,8 @@
 | `src/background/` | Service Worker：右键菜单、快捷键、Port 任务路由、调用模型、缓存与历史写入 |
 | `src/content/` | 内容脚本：选区监听、工具栏、翻译卡片、问答卡片；全部渲染在封闭 Shadow DOM 中 |
 | `src/sidepanel/` | 侧边栏：翻译历史、问答会话（可继续追问）、备忘录（搜索、编辑、导出） |
-| `src/options/` | 设置页：服务商预设、连接测试、偏好设置、欢迎引导 |
-| `src/shared/` | 跨上下文共享：类型、存储、消息构造、服务商预设、常量、设计规范、Toast |
+| `src/options/` | 设置页：服务商预设、模型下拉框（`combobox.ts`）、连接测试、偏好设置、欢迎引导 |
+| `src/shared/` | 跨上下文共享：类型、存储、消息构造、服务商预设、模型列表获取与筛选（`model-list.ts`）、常量、设计规范、Toast |
 | `public/` | 图标、`_locales` 多语言文案 |
 | `tests/unit/` | Vitest 单元测试（jsdom + chrome API 模拟，见 `tests/setup.ts`） |
 | `scripts/` | 生成图标、渲染截图 |
@@ -48,9 +48,13 @@
 
 ### 3.2 划词问答
 
-与翻译共用 Port 通道，任务类型为 `qa`，携带会话 ID、原文与多轮消息；后台按「多轮上限」裁剪上下文后请求，完成后更新会话并广播 `qaSessionUpdated`。侧边栏打开历史会话可继续追问。
+与翻译共用 Port 通道，任务类型为 `qa`，携带会话 ID、原文与多轮消息；后台按「多轮上限」裁剪上下文后请求，完成后更新会话并广播 `qaSessionUpdated`。侧边栏打开历史会话可继续追问。设置了 `qaModel` 时问答改用该模型，会话记录实际使用的模型；未设置时沿用翻译模型。
 
-### 3.3 设置读写
+### 3.3 模型列表
+
+设置页点「获取模型列表」或测试连接成功后，`model-list.ts` 请求 `GET {baseUrl}/models`（支持 `has_more` 分页），按名称排除向量、语音、图像、视觉等非文本模型。结果按接口地址缓存在 `storage.local`；获取失败时下拉框回退到 `providers.ts` 中该服务商的推荐模型，输入框始终可手动填写。
+
+### 3.4 设置读写
 
 `storage.ts` 将设置拆成两部分：敏感字段（`apiKey`、`customHeaders`）存 `storage.local`，其余存 `storage.sync` 以便跨设备同步。读取带 1.5 秒超时降级，防止 Edge 同步异常时卡住界面。
 
@@ -60,4 +64,4 @@
 - **设计规范**：颜色、圆角、阴影、字体只在 `src/shared/tokens.css` 定义（浅色 / 深色两套），所有界面引用变量。
 - **安全输出**：模型输出只通过 `textContent` 写入 DOM。
 - **错误分级**：`llm-client.normalizeError` 把 HTTP 状态与网络异常归一为 `auth / rate_limit / context_too_long / network / bad_response / aborted / unknown`，界面据此给出「打开设置」「重试」等下一步操作。
-- **单一来源**：产品名、链接、菜单 ID 在 `constants.ts`；服务商预设在 `providers.ts`；消息结构在 `messages.ts`。
+- **单一来源**：产品名、链接、菜单 ID 在 `constants.ts`；服务商预设与推荐模型在 `providers.ts`；文本模型的名称筛选规则在 `model-list.ts`；消息结构在 `messages.ts`。
