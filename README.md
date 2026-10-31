@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/typescript-strict-3178C6)](tsconfig.json)
 [![License](https://img.shields.io/badge/license-MIT-16A34A)](LICENSE)
 
-[安装](#-安装) · [使用](#-使用) · [常见问题](#-常见问题) · [隐私](#-隐私与安全) · [开发](#-开发)
+[安装](#-安装) · [使用](#-使用) · [常见问题](#-常见问题) · [工作原理](#-工作原理) · [隐私](#-隐私与安全) · [开发](#-开发)
 
 <img src="docs/images/in-page.png" width="820" alt="划词译问：网页内划词翻译与问答">
 
@@ -41,6 +41,14 @@
   <tr>
     <td align="center">设置页：选择服务商即自动填好接口与模型</td>
     <td align="center">侧边栏：翻译、问答、备忘录统一管理</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/in-page-dark.png" alt="网页内卡片（深色）"></td>
+    <td><img src="docs/images/sidepanel-dark.png" alt="侧边栏（深色）"></td>
+  </tr>
+  <tr>
+    <td align="center">深色模式：随系统自动切换</td>
+    <td align="center">侧边栏（深色）</td>
   </tr>
 </table>
 
@@ -109,6 +117,26 @@ npm run build        # 产物在 dist/，按上面第 2～3 步加载 dist 目�
 历史、问答、备忘录与 API Key 只保存在本机浏览器。非敏感的偏好设置（语言、开关等）会随浏览器账号同步，API Key 与自定义请求头不会同步。
 </details>
 
+## 🔧 工作原理
+
+```
+┌──────────── 网页 ─────────────┐   Port    ┌──────── 后台 Service Worker ────────┐  HTTPS   ┌──────────────┐
+│ ① 选中文字 → 浮出工具栏       │──────────▶│ ② 读取设置 → 查译文缓存              │─────────▶│ 你配置的     │
+│ ④ 卡片逐字显示译文 / 回答     │◀──────────│ ③ 流式请求，逐段回传                 │◀─────────│ 模型服务     │
+│   （Shadow DOM，与网页隔离）  │   token   │ ⑤ 写入历史、会话与缓存               │  stream  │ OpenAI 兼容  │
+└───────────────────────────────┘           └──────────────────┬──────────────────┘          └──────────────┘
+                                                                │ chrome.storage
+                         ┌──────── 侧边栏 ────────┐   ┌──────── 设置页 ────────┐
+                         │ 历史 · 问答 · 备忘录   │   │ 服务商 · 偏好 · 引导   │
+                         └────────────────────────┘   └────────────────────────┘
+```
+
+- 网页内只负责界面，所有模型请求由后台发出，API Key 不进入网页环境。
+- 请求从浏览器直连你配置的接口地址，中间没有任何第三方服务器。
+- 偏好设置存 `storage.sync`（随账号同步）；API Key、历史、会话、备忘录、缓存存 `storage.local`（只在本机）。
+
+模块划分、消息协议与关键流程见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+
 ## 🔐 隐私与安全
 
 - **无服务器**：扩展没有后端，不收集、不上传任何数据；划词内容只发送给你自己配置的模型服务。
@@ -119,13 +147,39 @@ npm run build        # 产物在 dist/，按上面第 2～3 步加载 dist 目�
 
 ## 🛠 开发
 
+### 项目结构
+
+```
+edge-translate-extension/
+├── src/
+│   ├── manifest.ts        扩展清单（名称与描述走 _locales）
+│   ├── background/        Service Worker：菜单、快捷键、翻译、问答、缓存
+│   ├── content/           内容脚本：选区监听、工具栏、翻译卡片、问答卡片
+│   ├── sidepanel/         侧边栏：历史、问答会话、备忘录
+│   ├── options/           设置页：服务商预设、连接测试、欢迎引导
+│   └── shared/            类型、存储、消息、常量、服务商预设、设计令牌
+├── public/                图标与 _locales 中英文案
+├── tests/unit/            Vitest 单元测试（jsdom + chrome API 模拟）
+├── scripts/               生成图标、渲染截图
+└── docs/                  架构、开发规范、上架素材与截图
+```
+
+### 常用命令
+
 | 命令 | 说明 |
 |---|---|
-| `npm run dev` | 开发模式（热更新），加载 `dist/` 调试 |
+| `npm run dev` | 开发模式（热更新），在浏览器中加载 `dist/` 调试 |
 | `npm run build` | 生产构建 |
 | `npm run check` | 类型检查 + 代码检查 + 单元测试 |
 | `npm run icons` | 重新生成图标（Python + Pillow） |
 | `npm run screenshots` | 用演示数据渲染各界面截图（需先 build，Windows + Edge） |
+
+浏览器内调试方法见 [开发规范 · 调试](docs/DEVELOPMENT.md#2-调试)。
+
+### 发布新版本
+
+1. 修改 `package.json` 的 `version`，在 `CHANGELOG.md` 中记录变更。
+2. 打标签 `vX.Y.Z` 并推送，GitHub Actions 自动检查、构建，并把可上传应用商店的 zip 发布到 Releases。
 
 - 架构说明：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - 开发规范：[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
@@ -139,7 +193,9 @@ npm run build        # 产物在 dist/，按上面第 2～3 步加载 dist 目�
 - [ ] 备忘录标签与分组
 - [ ] 浏览器内置 PDF 阅读器划词
 
-欢迎在 [Issues](https://github.com/lizhongv/edge-translate-extension/issues) 提建议，贡献方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+## 🤝 参与贡献
+
+欢迎提交 Issue 和 Pull Request，详见 [CONTRIBUTING.md](CONTRIBUTING.md)；安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
 
 ## 📄 许可证
 
